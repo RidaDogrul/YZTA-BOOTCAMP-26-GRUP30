@@ -5,4 +5,5 @@ pydantic
 langchain
 langchain-google-genai
 sqlalchemy
+psycopg2-binary
 
