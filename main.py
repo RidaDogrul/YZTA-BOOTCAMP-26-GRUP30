@@ -9,18 +9,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
+from src.utils.config import get_settings
 
 from src.api.v1.api import api_router
+from src.utils.config import get_settings
+
+
+settings = get_settings()
 
 # --- Loglama ayarı ---
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
 # --- FastAPI uygulaması ---
 app = FastAPI(
-    title="Otonom Data Cleanroom & Tahminleme Ajanı",
+    title=settings.app_name,
     description="YZTA Bootcamp Grup 30 - Backend API",
     version="0.1.0",
+    debug=settings.debug,
 )
 
 
@@ -59,4 +65,8 @@ app.include_router(api_router, prefix="/api/v1")
 # --- Sağlık kontrolü ---
 @app.get("/health", tags=["Health"])
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "environment": settings.app_env,
+        "debug": settings.debug,
+    }
