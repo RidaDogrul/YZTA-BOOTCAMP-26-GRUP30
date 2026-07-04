@@ -38,7 +38,7 @@ OPENAPI_TAGS: list[dict[str, Any]] = [
     {
         "name": "Connect DB",
         "description": (
-            "PostgreSQL ve AWS S3 veri kaynaklarına bağlantı kurma, test etme "
+            "PostgreSQL, MongoDB ve AWS S3 veri kaynaklarına bağlantı kurma, test etme "
             "ve şema keşfi. Ayarlar ekranı bu grubu kullanır."
         ),
     },

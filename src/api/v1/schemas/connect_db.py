@@ -5,9 +5,9 @@ from pydantic import BaseModel, Field
 
 
 class ConnectDbRequest(BaseModel):
-    """PostgreSQL veya S3 veri kaynağına bağlanmak için gönderilen istek."""
+    """PostgreSQL, MongoDB veya S3 veri kaynağına bağlanmak için gönderilen istek."""
 
-    source_type: Literal["postgresql", "s3"] = Field(
+    source_type: Literal["postgresql", "mongodb", "s3"] = Field(
         ...,
         description="Bağlanılacak veri kaynağı türü",
         examples=["postgresql"],
@@ -16,6 +16,11 @@ class ConnectDbRequest(BaseModel):
         default=None,
         description="PostgreSQL için SQLAlchemy bağlantı adresi",
         examples=["postgresql+psycopg2://postgres:****@localhost:5434/pizza_runner"],
+    )
+    mongodb_uri: str | None = Field(
+        default=None,
+        description="MongoDB bağlantı URI'si",
+        examples=["mongodb://localhost:27017/mydb"],
     )
     bucket_name: str | None = Field(
         default=None,
@@ -36,6 +41,10 @@ class ConnectDbRequest(BaseModel):
                     "connection_url": "postgresql+psycopg2://postgres:****@localhost:5434/pizza_runner",
                 },
                 {
+                    "source_type": "mongodb",
+                    "mongodb_uri": "mongodb://localhost:27017/mydb",
+                },
+                {
                     "source_type": "s3",
                     "bucket_name": "elifs-macaroon-market",
                     "prefix": "",
@@ -53,7 +62,11 @@ class TestConnectionResponse(BaseModel):
     source_type: str = Field(..., description="Test edilen kaynak türü")
     version: str | None = Field(
         default=None,
-        description="PostgreSQL sürüm bilgisi (yalnızca postgresql)",
+        description="Veritabanı sürüm bilgisi (postgresql / mongodb)",
+    )
+    database: str | None = Field(
+        default=None,
+        description="Bağlanılan veritabanı adı (mongodb)",
     )
     bucket: str | None = Field(
         default=None,
@@ -90,7 +103,11 @@ class SchemaResponse(BaseModel):
     )
     tables: list[dict[str, Any]] = Field(
         default_factory=list,
-        description="Tablo, sütun ve ilişki meta-verisi (JSON)",
+        description="Tablo, sütun ve ilişki meta-verisi (postgresql)",
+    )
+    collections: list[dict[str, Any]] = Field(
+        default_factory=list,
+        description="Koleksiyon ve alan meta-verisi (mongodb)",
     )
 
     model_config = {
