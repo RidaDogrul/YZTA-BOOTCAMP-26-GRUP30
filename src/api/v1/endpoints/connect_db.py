@@ -2,7 +2,7 @@
 Veri kaynağı bağlantı endpoint'leri — Swagger/OpenAPI şablonu.
 
 FS Notları:
-- Kullanıcı ayarlar ekranından PostgreSQL veya S3 bağlantısı kurar.
+- Kullanıcı ayarlar ekranından PostgreSQL, MongoDB veya S3 bağlantısı kurar.
 - Başarılı bağlantı sonrası dönen `session_id` chat ve reports endpoint'lerinde kullanılır.
 - Gerçek implementasyon Sprint 2'de konnektör modülleriyle tamamlanacak.
 """
@@ -24,7 +24,7 @@ router = APIRouter()
     response_model=TestConnectionResponse,
     summary="Veri kaynağı bağlantı testi",
     description=(
-        "PostgreSQL veya S3 kimlik bilgilerinin geçerli olup olmadığını kontrol eder. "
+        "PostgreSQL, MongoDB veya S3 kimlik bilgilerinin geçerli olup olmadığını kontrol eder. "
         "Kalıcı oturum açmadan önce frontend'in 'Bağlantıyı Test Et' butonunda kullanılır."
     ),
     response_description="Bağlantı testi sonucu.",
@@ -43,11 +43,16 @@ def test_connection(payload: ConnectDbRequest) -> TestConnectionResponse:
     }
     ```
     """
-    # TODO(Sprint-2): PostgresConnector / S3Connector ile gerçek test
+    # TODO(Sprint-2): PostgresConnector / MongoConnector / S3Connector ile gerçek test
     if payload.source_type == "postgresql" and not payload.connection_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="PostgreSQL için connection_url zorunludur.",
+        )
+    if payload.source_type == "mongodb" and not payload.mongodb_uri:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="MongoDB için mongodb_uri zorunludur.",
         )
     if payload.source_type == "s3" and not payload.bucket_name:
         raise HTTPException(
@@ -55,13 +60,28 @@ def test_connection(payload: ConnectDbRequest) -> TestConnectionResponse:
             detail="S3 için bucket_name zorunludur.",
         )
 
+    version = None
+    database = None
+    bucket = None
+    region = None
+
+    if payload.source_type == "postgresql":
+        version = "PostgreSQL 18.1 (örnek)"
+    elif payload.source_type == "mongodb":
+        version = "7.0 (örnek)"
+        database = "mydb"
+    elif payload.source_type == "s3":
+        bucket = payload.bucket_name
+        region = "eu-central-1"
+
     return TestConnectionResponse(
         ok=True,
         message="Şablon yanıt — gerçek bağlantı testi Sprint 2'de eklenecek.",
         source_type=payload.source_type,
-        version="PostgreSQL 18.1 (örnek)" if payload.source_type == "postgresql" else None,
-        bucket=payload.bucket_name if payload.source_type == "s3" else None,
-        region="eu-central-1" if payload.source_type == "s3" else None,
+        version=version,
+        database=database,
+        bucket=bucket,
+        region=region,
     )
 
 
@@ -94,7 +114,7 @@ def connect_data_source(payload: ConnectDbRequest) -> ConnectDbResponse:
     response_model=SchemaResponse,
     summary="Bağlı kaynağın şemasını getir",
     description=(
-        "Aktif oturumdaki PostgreSQL veritabanının tablo/sütun şemasını döner. "
+        "Aktif oturumdaki veritabanının şema/koleksiyon meta-verisini döner. "
         "Chat ekranında 'Bağlı Veri Kaynağı' panelinde gösterilebilir."
     ),
     response_description="LLM ve frontend için yapılandırılmış şema bilgisi.",
