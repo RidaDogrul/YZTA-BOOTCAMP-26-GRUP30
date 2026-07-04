@@ -1,6 +1,6 @@
 """
 Uygulamanın giriş noktası.
-Çalıştırmak için:  uvicorn main:app --reload
+Çalıştırmak için:  python -m uvicorn main:app --reload
 """
 import logging
 
@@ -11,6 +11,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 from src.api.v1.api import api_router
+from src.api.v1.openapi import API_DESCRIPTION, OPENAPI_TAGS
 
 # --- Loglama ayarı ---
 logging.basicConfig(level=logging.INFO)
@@ -19,8 +20,16 @@ logger = logging.getLogger(__name__)
 # --- FastAPI uygulaması ---
 app = FastAPI(
     title="Otonom Data Cleanroom & Tahminleme Ajanı",
-    description="YZTA Bootcamp Grup 30 - Backend API",
+    description=API_DESCRIPTION,
     version="0.1.0",
+    openapi_tags=OPENAPI_TAGS,
+    contact={
+        "name": "YZTA Bootcamp Grup 30",
+        "url": "https://github.com/RidaDogrul/YZTA-BOOTCAMP-26-GRUP30",
+    },
+    license_info={
+        "name": "Bootcamp Projesi",
+    },
 )
 
 
@@ -57,6 +66,21 @@ app.include_router(api_router, prefix="/api/v1")
 
 
 # --- Sağlık kontrolü ---
-@app.get("/health", tags=["Health"])
+@app.get(
+    "/health",
+    tags=["Health"],
+    summary="Sunucu sağlık kontrolü",
+    description="Uygulama seviyesinde health-check. Load balancer ve CI/CD için kullanılır.",
+    responses={
+        500: {
+            "description": "Sunucu hatası",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Sunucuda beklenmeyen bir hata oluştu."}
+                }
+            },
+        }
+    },
+)
 def health_check():
     return {"status": "ok"}
