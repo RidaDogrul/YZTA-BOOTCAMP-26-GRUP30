@@ -13,3 +13,6 @@ presidio-analyzer
 presidio-anonymizer
 spacy
 pandas
+
+
+pymysql
