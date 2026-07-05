@@ -3,6 +3,8 @@ __all__ = [
     "PostgresConnector",
     "S3Config",
     "S3Connector",
+    "MongoConfig",
+    "MongoConnector",
 ]
 
 _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
@@ -10,6 +12,8 @@ _LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "PostgresConnector": ("src.connectors.postgres", "PostgresConnector"),
     "S3Config": ("src.connectors.s3_storage", "S3Config"),
     "S3Connector": ("src.connectors.s3_storage", "S3Connector"),
+    "MongoConfig": ("src.connectors.mongodb", "MongoConfig"),
+    "MongoConnector": ("src.connectors.mongodb", "MongoConnector"),
 }
 
 
