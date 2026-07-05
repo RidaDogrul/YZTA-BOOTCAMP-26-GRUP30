@@ -2,6 +2,7 @@
 Uygulamanın giriş noktası.
 Çalıştırmak için:  python -m uvicorn main:app --reload
 """
+
 import logging
 
 from fastapi import FastAPI
@@ -12,16 +13,23 @@ from starlette.responses import JSONResponse
 
 from src.api.v1.api import api_router
 from src.api.v1.openapi import API_DESCRIPTION, OPENAPI_TAGS
+from src.utils.config import get_settings
+
+
+settings = get_settings()
+
 
 # --- Loglama ayarı ---
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
+
 
 # --- FastAPI uygulaması ---
 app = FastAPI(
-    title="Otonom Data Cleanroom & Tahminleme Ajanı",
+    title=settings.app_name,
     description=API_DESCRIPTION,
     version="0.1.0",
+    debug=settings.debug,
     openapi_tags=OPENAPI_TAGS,
     contact={
         "name": "YZTA Bootcamp Grup 30",
@@ -50,6 +58,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(ErrorHandlerMiddleware)
 
+
 # --- CORS ---
 # Frontend farklı bir porttan çalışacağı için API'ye erişebilmesini sağlar.
 # Geliştirmede "*"; production'da daraltacağız.
@@ -60,6 +69,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # --- Router'ları bağla ---
 app.include_router(api_router, prefix="/api/v1")
@@ -83,4 +93,8 @@ app.include_router(api_router, prefix="/api/v1")
     },
 )
 def health_check():
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "environment": settings.app_env,
+        "debug": settings.debug,
+    }

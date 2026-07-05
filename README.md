@@ -53,6 +53,8 @@ ai-data-agent/
 │   │   └── preprocessor.py         # Eksik veri tamamlama ve outlier temizliği
 │   │
 │   └── utils/                      # Yardımcı Fonksiyonlar (Logger, Formatters)
+│       ├── config.py               # .env tabanlı merkezi ayar yönetimi
+│       └── logger.py               # JSON logging ve request-id takibi
 │
 ├── tests/                          # Birim ve Entegrasyon Testleri
 ├── requirements.txt                # Bağımlılıklar (fastapi, pandas, crewai, scikit-learn)
