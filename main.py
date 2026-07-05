@@ -1,7 +1,8 @@
 """
 Uygulamanın giriş noktası.
-Çalıştırmak için:  uvicorn main:app --reload
+Çalıştırmak için:  python -m uvicorn main:app --reload
 """
+
 import logging
 
 from fastapi import FastAPI
@@ -9,24 +10,34 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
-from src.utils.config import get_settings
 
 from src.api.v1.api import api_router
+from src.api.v1.openapi import API_DESCRIPTION, OPENAPI_TAGS
 from src.utils.config import get_settings
 
 
 settings = get_settings()
 
+
 # --- Loglama ayarı ---
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
 
+
 # --- FastAPI uygulaması ---
 app = FastAPI(
     title=settings.app_name,
-    description="YZTA Bootcamp Grup 30 - Backend API",
+    description=API_DESCRIPTION,
     version="0.1.0",
     debug=settings.debug,
+    openapi_tags=OPENAPI_TAGS,
+    contact={
+        "name": "YZTA Bootcamp Grup 30",
+        "url": "https://github.com/RidaDogrul/YZTA-BOOTCAMP-26-GRUP30",
+    },
+    license_info={
+        "name": "Bootcamp Projesi",
+    },
 )
 
 
@@ -47,6 +58,7 @@ class ErrorHandlerMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(ErrorHandlerMiddleware)
 
+
 # --- CORS ---
 # Frontend farklı bir porttan çalışacağı için API'ye erişebilmesini sağlar.
 # Geliştirmede "*"; production'da daraltacağız.
@@ -58,12 +70,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # --- Router'ları bağla ---
 app.include_router(api_router, prefix="/api/v1")
 
 
 # --- Sağlık kontrolü ---
-@app.get("/health", tags=["Health"])
+@app.get(
+    "/health",
+    tags=["Health"],
+    summary="Sunucu sağlık kontrolü",
+    description="Uygulama seviyesinde health-check. Load balancer ve CI/CD için kullanılır.",
+    responses={
+        500: {
+            "description": "Sunucu hatası",
+            "content": {
+                "application/json": {
+                    "example": {"detail": "Sunucuda beklenmeyen bir hata oluştu."}
+                }
+            },
+        }
+    },
+)
 def health_check():
     return {
         "status": "ok",

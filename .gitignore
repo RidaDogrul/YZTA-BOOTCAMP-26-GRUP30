@@ -8,3 +8,9 @@ __pycache__/
 .idea/
 *.db
 .history/
+*.dbdata/output/
+__pycache__/
+.pytest_cache/
+*.pyc
+*.db
+*.archive

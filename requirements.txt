@@ -8,3 +8,12 @@ sqlalchemy
 psycopg2-binary
 boto3
 pydantic-settings
+pymongo
+
+presidio-analyzer
+presidio-anonymizer
+spacy
+pandas
+
+
+pymysql
