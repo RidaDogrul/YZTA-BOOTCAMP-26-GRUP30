@@ -13,7 +13,7 @@ from typing import Any, Generator
 import boto3
 from botocore.client import BaseClient
 from botocore.exceptions import BotoCoreError, ClientError
-from pydantic import BaseModel, Field, SecretStr, field_validator
+from pydantic import BaseModel, SecretStr, field_validator
 
 # Veri analizi için desteklenen dosya uzantıları
 _DATA_EXTENSIONS = {".csv", ".json", ".jsonl", ".parquet", ".xlsx", ".xls", ".tsv"}

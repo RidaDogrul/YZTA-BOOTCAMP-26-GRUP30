@@ -1,0 +1,42 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - "feature/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint-typecheck-test:
+    name: Lint, Type Check and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff mypy pytest
+
+      - name: Run Ruff lint check
+        run: |
+          ruff check .
+
+      - name: Run Mypy type check
+        run: |
+          mypy src --follow-imports=skip
+
+      - name: Run Pytest
+        run: |
+          pytest
