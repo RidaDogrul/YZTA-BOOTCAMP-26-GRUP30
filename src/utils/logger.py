@@ -8,7 +8,10 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 
-request_id_var = contextvars.ContextVar("request_id", default=None)
+request_id_var: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+    "request_id",
+    default=None,
+)
 
 
 RESERVED_LOG_RECORD_KEYS = {
