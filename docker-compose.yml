@@ -1,4 +1,23 @@
 services:
+  api:
+    build: .
+    container_name: yzta-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      DEBUG: "true"
+      LOG_LEVEL: INFO
+      DATABASE_URL: postgresql+psycopg2://postgres:3456@postgres:5432/pizza_runner
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
   postgres:
     image: postgres:16
     container_name: yzta-postgres
