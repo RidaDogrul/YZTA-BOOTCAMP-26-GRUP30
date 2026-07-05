@@ -202,7 +202,7 @@ Sprint planlaması ve görev takibi Jira üzerinden yürütülmektedir. Her spri
 
 | Sprint | Klasör | İçerik |
 |--------|--------|--------|
-| **Sprint I** | [`Jira/Sprint-I/`](./Jira/Sprint-I) | [Pano Görseli 1](./Jira/Sprint-I/Sprint-1-jira.png) · [Pano Görseli 2](./Jira/Sprint-I/Sprint-I-jira-2.png) · [Görev Listesi (xlsx)](./Jira/Sprint-I/jira-sprint1.xlsx) |
+| **Sprint I** | [`Jira/Sprint-I/`](./Jira/Sprint-I) | [Pano Görseli 1](./Jira/Sprint-I/Sprint%20I%20-%20Jira.png) · [Pano Görseli 2](./Jira/Sprint-I/Sprint-I-jira-2.png) · [Görev Listesi (xlsx)](./Jira/Sprint-I/jira-sprint1%20.xlsx) |
 | **Sprint II** | [`Jira/Sprint-II/`](./Jira/Sprint-II) | *(Yakında eklenecek)* |
 | **Sprint III** | [`Jira/Sprint-III/`](./Jira/Sprint-III) | *(Yakında eklenecek)* |
 
