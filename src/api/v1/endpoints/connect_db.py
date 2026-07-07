@@ -1,7 +1,7 @@
 """
 Veri kaynağı bağlantı endpoint'leri.
 
-Desteklenen kaynaklar: PostgreSQL, MySQL, MongoDB, AWS S3
+Desteklenen kaynaklar: PostgreSQL, MySQL, MongoDB, AWS S3, Snowflake
 
 Endpoint'ler:
     POST /connect-db/test          → Bağlantıyı test et (oturum açmadan)
@@ -28,6 +28,7 @@ from src.connectors.mongodb import MongoConnector
 from src.connectors.mysql import MySQLConnector
 from src.connectors.postgres import PostgresConnector
 from src.connectors.s3_storage import S3Config, S3Connector
+from src.connectors.snowflake_conn import SnowflakeConfig, SnowflakeConnector
 from src.utils.logger import get_logger
 from src.utils.session_store import session_store
 
@@ -43,7 +44,7 @@ router = APIRouter()
     response_model=TestConnectionResponse,
     summary="Veri kaynağı bağlantı testi",
     description=(
-        "PostgreSQL, MySQL, MongoDB veya S3 kimlik bilgilerinin geçerli olup olmadığını "
+        "PostgreSQL, MySQL, MongoDB, S3 veya Snowflake kimlik bilgilerinin geçerli olup olmadığını "
         "kontrol eder. Kalıcı oturum açmadan önce 'Bağlantıyı Test Et' için kullanılır."
     ),
     responses={
@@ -62,6 +63,16 @@ def test_connection(payload: ConnectDbRequest) -> TestConnectionResponse:
     ```json
     {"source_type": "mysql",
      "connection_url": "mysql+pymysql://user:pass@localhost:3306/mydb"}
+    ```
+    Örnek (Snowflake):
+    ```json
+    {"source_type": "snowflake",
+     "snowflake_account": "xy12345.eu-central-1",
+     "snowflake_user": "myuser",
+     "snowflake_password": "mypassword",
+     "snowflake_database": "MY_DB",
+     "snowflake_schema": "PUBLIC",
+     "snowflake_warehouse": "COMPUTE_WH"}
     ```
     Örnek (S3):
     ```json
@@ -100,6 +111,8 @@ def test_connection(payload: ConnectDbRequest) -> TestConnectionResponse:
         database=result.get("database"),
         bucket=result.get("bucket"),
         region=result.get("region"),
+        warehouse=result.get("warehouse"),
+        snowflake_schema=result.get("schema"),
     )
 
 
@@ -173,7 +186,7 @@ def get_schema(session_id: str) -> SchemaResponse:
     connector, source_type = _get_active_connector(session_id)
 
     try:
-        if source_type in ("postgresql", "mysql"):
+        if source_type in ("postgresql", "mysql", "snowflake"):
             schema_dict = connector.extract_schema()
             schema_text = connector.schema_to_prompt()
             return SchemaResponse(
@@ -314,6 +327,29 @@ def _build_connector(payload: ConnectDbRequest) -> BaseConnector:
         )
         return S3Connector(config)
 
+    elif payload.source_type == "snowflake":
+        missing = [
+            f for f, v in [
+                ("snowflake_account",  payload.snowflake_account),
+                ("snowflake_user",     payload.snowflake_user),
+                ("snowflake_password", payload.snowflake_password),
+                ("snowflake_database", payload.snowflake_database),
+            ] if not v
+        ]
+        if missing:
+            raise ValueError(f"Snowflake için zorunlu alanlar eksik: {', '.join(missing)}")
+
+        sf_config = SnowflakeConfig(
+            account=payload.snowflake_account,        # type: ignore[arg-type]
+            user=payload.snowflake_user,              # type: ignore[arg-type]
+            password=SecretStr(payload.snowflake_password),  # type: ignore[arg-type]
+            database=payload.snowflake_database,      # type: ignore[arg-type]
+            schema_name=payload.snowflake_schema or "PUBLIC",
+            warehouse=payload.snowflake_warehouse,
+            role=payload.snowflake_role,
+        )
+        return SnowflakeConnector(sf_config)
+
     raise ValueError(f"Desteklenmeyen kaynak tipi: {payload.source_type}")
 
 
@@ -345,6 +381,11 @@ def _build_connect_message(source_type: str, result: dict) -> str:
     elif source_type == "s3":
         bucket = result.get("bucket", "bucket")
         return f"S3 bucket '{bucket}' bağlandı."
+    elif source_type == "snowflake":
+        db = result.get("database", "veritabanı")
+        wh = result.get("warehouse", "")
+        wh_part = f" (warehouse: {wh})" if wh else ""
+        return f"Snowflake '{db}' veritabanına bağlandı{wh_part}."
     return f"{source_type} kaynağına bağlandı."
 
 

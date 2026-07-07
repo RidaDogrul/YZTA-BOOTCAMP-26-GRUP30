@@ -6,9 +6,9 @@ from pydantic import BaseModel, Field
 
 
 class ConnectDbRequest(BaseModel):
-    """PostgreSQL, MongoDB veya S3 veri kaynağına bağlanmak için gönderilen istek."""
+    """PostgreSQL, MySQL, MongoDB, S3 veya Snowflake veri kaynağına bağlanmak için gönderilen istek."""
 
-    source_type: Literal["postgresql", "mysql", "mongodb", "s3"] = Field(
+    source_type: Literal["postgresql", "mysql", "mongodb", "s3", "snowflake"] = Field(
         ...,
         description="Bağlanılacak veri kaynağı türü",
         examples=["postgresql"],
@@ -54,6 +54,42 @@ class ConnectDbRequest(BaseModel):
         description="S3 kaynağı için opsiyonel klasör öneki",
         examples=["data/raw/"],
     )
+    # --- Snowflake ---
+    snowflake_account: str | None = Field(
+        default=None,
+        description="Snowflake hesap tanımlayıcısı (örn: xy12345.eu-central-1)",
+        examples=["xy12345.eu-central-1"],
+    )
+    snowflake_user: str | None = Field(
+        default=None,
+        description="Snowflake kullanıcı adı",
+        examples=["myuser"],
+    )
+    snowflake_password: str | None = Field(
+        default=None,
+        description="Snowflake parolası",
+        examples=["mypassword"],
+    )
+    snowflake_database: str | None = Field(
+        default=None,
+        description="Snowflake veritabanı adı",
+        examples=["MY_DB"],
+    )
+    snowflake_schema: str | None = Field(
+        default="PUBLIC",
+        description="Snowflake şema adı",
+        examples=["PUBLIC"],
+    )
+    snowflake_warehouse: str | None = Field(
+        default=None,
+        description="Snowflake sanal deposu (warehouse)",
+        examples=["COMPUTE_WH"],
+    )
+    snowflake_role: str | None = Field(
+        default=None,
+        description="Snowflake kullanıcı rolü (opsiyonel)",
+        examples=["SYSADMIN"],
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -77,6 +113,15 @@ class ConnectDbRequest(BaseModel):
                     "aws_secret_access_key": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
                     "aws_region": "eu-central-1",
                     "prefix": "data/raw/",
+                },
+                {
+                    "source_type": "snowflake",
+                    "snowflake_account": "xy12345.eu-central-1",
+                    "snowflake_user": "myuser",
+                    "snowflake_password": "****",
+                    "snowflake_database": "MY_DB",
+                    "snowflake_schema": "PUBLIC",
+                    "snowflake_warehouse": "COMPUTE_WH",
                 },
             ]
         }
@@ -104,6 +149,14 @@ class TestConnectionResponse(BaseModel):
     region: str | None = Field(
         default=None,
         description="AWS bölgesi (yalnızca s3)",
+    )
+    warehouse: str | None = Field(
+        default=None,
+        description="Aktif Snowflake warehouse (yalnızca snowflake)",
+    )
+    snowflake_schema: str | None = Field(
+        default=None,
+        description="Aktif Snowflake şema adı (yalnızca snowflake)",
     )
 
     model_config = {
