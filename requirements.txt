@@ -17,4 +17,5 @@ pandas
 
 
 pymysql
+snowflake-sqlalchemy
 pre-commit
