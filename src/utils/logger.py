@@ -1,4 +1,5 @@
 import contextvars
+import io
 import json
 import logging
 import re
@@ -261,9 +262,31 @@ class JSONFormatter(logging.Formatter):
         return json.dumps(log_data, ensure_ascii=False)
 
 
+def _get_utf8_stream() -> io.TextIOWrapper | Any:
+    """
+    sys.stdout'u UTF-8 modunda döndürür.
+    Windows cmd/PowerShell ASCII modunda başlar; bu fonksiyon bunu düzeltir.
+    """
+    try:
+        # reconfigure varsa (Python 3.7+) doğrudan uygula
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            return sys.stdout
+        # fileno() üzerinden yeni bir UTF-8 wrapper aç
+        return io.TextIOWrapper(
+            sys.stdout.buffer,
+            encoding="utf-8",
+            errors="replace",
+            line_buffering=True,
+        )
+    except Exception:
+        return sys.stdout  # fallback
+
+
 def get_logger(name: str) -> logging.Logger:
     """
     JSON formatlı logger döndürür.
+    Windows dahil tüm platformlarda UTF-8 çıktı garantiler.
     """
 
     logger = logging.getLogger(name)
@@ -271,7 +294,7 @@ def get_logger(name: str) -> logging.Logger:
     logger.propagate = False
 
     if not logger.handlers:
-        handler = logging.StreamHandler(sys.stdout)
+        handler = logging.StreamHandler(_get_utf8_stream())
         handler.setFormatter(JSONFormatter())
         logger.addHandler(handler)
 
