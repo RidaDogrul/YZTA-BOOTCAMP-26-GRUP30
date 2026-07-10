@@ -222,9 +222,9 @@ Her sprint boyunca gerçekleştirilen stand-up toplantılarına (haftada 2-3 kez
 
 ---
 
-## Ürün Durumu ve Sprint Güncellemeleri
+## Ürün Durumu Kontrol Klasörü
 
-Ürünün güncel durumuna, her sprint'te gerçekleştirilen değişikliklere ait ekran görüntüleri ve belgelerine aşağıdaki klasörden ulaşabilirsiniz:
+Ürün durumu kontrol klasöründe,  ürünün güncel durumuna ve bu ürün durumu ile ilgili her sprint boyunca yapılan testlere ait ekran görüntülerine ulaşabilirsiniz:
 
 📁 [`Ürün_Durumu_Kontrol/`](./Ürün_Durumu_Kontrol)
 
