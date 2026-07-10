@@ -235,8 +235,7 @@ Her sprint boyunca gerçekleştirilen stand-up toplantılarına (haftada 2-3 kez
 | **Sprint III** | [`Ürün_Durumu_Kontrol/Sprint-III/`](./Ürün_Durumu_Kontrol/Sprint-III) | *(Yakında eklenecek)* |
 
 
-
-
+**NOT**: Yapılan değişiklikler, her sprint bittiğinde güncellenecektir.
 
 
 
