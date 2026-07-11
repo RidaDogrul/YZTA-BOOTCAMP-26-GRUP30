@@ -64,23 +64,59 @@ class PIIAnonymizer:
         return anonymized_text
 
     def anonymize_dict(self, data: dict[str, Any]) -> dict[str, Any]:
-        """Dict içindeki string değerleri maskeler."""
-        anonymized_data: dict[str, Any] = {}
-        for key, value in data.items():
-            if isinstance(value, str):
-                anonymized_data[key] = self.anonymize_text(value)
-            elif isinstance(value, dict):
-                anonymized_data[key] = self.anonymize_dict(value)
-            elif isinstance(value, list):
-                anonymized_data[key] = [
-                    self.anonymize_text(item)
-                    if isinstance(item, str)
-                    else item
-                    for item in value
-                ]
-            else:
-                anonymized_data[key] = value
-        return anonymized_data
+        """
+        Dict içindeki kişisel verileri anahtar adlarını da dikkate alarak
+        recursive biçimde maskeler.
+        """
+        return {
+            key: self._anonymize_value(value, key_hint=str(key))
+            for key, value in data.items()
+        }
+
+    def _anonymize_value(
+        self,
+        value: Any,
+        key_hint: str | None = None,
+    ) -> Any:
+        """
+        İç içe dict, list ve tuple yapılarını recursive olarak işler.
+
+        key_hint verilmişse email, telefon, TCKN ve kişi adı gibi alanlar
+        yalnızca metin analizine bağlı kalmadan kesin olarak maskelenir.
+        """
+        if isinstance(value, dict):
+            return {
+                key: self._anonymize_value(item, key_hint=str(key))
+                for key, item in value.items()
+            }
+
+        if isinstance(value, list):
+            return [
+                self._anonymize_value(item, key_hint=key_hint)
+                for item in value
+            ]
+
+        if isinstance(value, tuple):
+            return tuple(
+                self._anonymize_value(item, key_hint=key_hint)
+                for item in value
+            )
+
+        if key_hint is not None:
+            pii_type = self._detect_pii_column_type(key_hint)
+
+            if pii_type is not None:
+                if value is None or (
+                    not isinstance(value, str) and pd.isna(value)
+                ):
+                    return value
+
+                return pii_type
+
+        if isinstance(value, str):
+            return self.anonymize_text(value)
+
+        return value
 
     def anonymize_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -130,14 +166,13 @@ class PIIAnonymizer:
 
         phone_pattern = (
             r"(?<!\d)"
-            r"(?:\+90|0090|0)?"
-            r"\s?"
-            r"5\d{2}"
-            r"\s?"
+            r"(?:(?:\+90|0090)[\s.-]*)?"
+            r"\(?0?5\d{2}\)?"
+            r"[\s.-]*"
             r"\d{3}"
-            r"\s?"
+            r"[\s.-]*"
             r"\d{2}"
-            r"\s?"
+            r"[\s.-]*"
             r"\d{2}"
             r"(?!\d)"
         )
