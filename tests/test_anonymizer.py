@@ -183,3 +183,82 @@ def test_original_dataframe_is_not_modified(anonymizer):
 
     assert df.loc[0, "email"] == "original@example.com"
     assert result.loc[0, "email"] == "<EMAIL>"
+
+def test_dict_masks_turkish_name_by_key(anonymizer):
+    data = {
+        "name": "Nimet Asude Yalçın",
+        "profil": {
+            "Müşteri Adı": "Ayşe Demir",
+            "status": "active",
+        },
+    }
+
+    result = anonymizer.anonymize_dict(data)
+
+    assert result["name"] == "<PERSON>"
+    assert result["profil"]["Müşteri Adı"] == "<PERSON>"
+    assert result["profil"]["status"] == "active"
+
+
+def test_dict_masks_pii_inside_list_of_dicts(anonymizer):
+    data = {
+        "customers": [
+            {
+                "name": "Nimet Asude Yalçın",
+                "email": "nimet@example.com",
+                "telefon": "05551234567",
+                "tc_no": "10000000146",
+                "total_order": 2500,
+            },
+            {
+                "name": "Ayşe Demir",
+                "email": "ayse@example.com",
+                "telefon": "+905559876543",
+                "tc_no": "10000000146",
+                "total_order": 1200,
+            },
+        ]
+    }
+
+    result = anonymizer.anonymize_dict(data)
+
+    assert result["customers"][0]["name"] == "<PERSON>"
+    assert result["customers"][0]["email"] == "<EMAIL>"
+    assert result["customers"][0]["telefon"] == "<PHONE>"
+    assert result["customers"][0]["tc_no"] == "<TCKN>"
+    assert result["customers"][0]["total_order"] == 2500
+
+    assert result["customers"][1]["name"] == "<PERSON>"
+    assert result["customers"][1]["email"] == "<EMAIL>"
+    assert result["customers"][1]["telefon"] == "<PHONE>"
+    assert result["customers"][1]["tc_no"] == "<TCKN>"
+    assert result["customers"][1]["total_order"] == 1200
+
+    result_text = str(result)
+
+    assert "Nimet Asude Yalçın" not in result_text
+    assert "Ayşe Demir" not in result_text
+    assert "nimet@example.com" not in result_text
+    assert "ayse@example.com" not in result_text
+    assert "05551234567" not in result_text
+    assert "+905559876543" not in result_text
+    assert "10000000146" not in result_text
+
+@pytest.mark.parametrize(
+    "phone_number",
+    [
+        "(0555) 123 45 67",
+        "0555-123-45-67",
+        "+90 (555) 123-45-67",
+    ],
+)
+def test_additional_phone_formats_are_masked(
+    anonymizer,
+    phone_number,
+):
+    text = f"Müşteri telefonu: {phone_number}"
+
+    result = anonymizer.anonymize_text(text)
+
+    assert phone_number not in result
+    assert "<PHONE>" in result
