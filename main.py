@@ -14,7 +14,7 @@ from starlette.responses import JSONResponse
 from src.api.v1.api import api_router
 from src.api.v1.openapi import API_DESCRIPTION, OPENAPI_TAGS
 from src.utils.config import get_settings
-
+from src.utils.metrics import PerformanceMetricsMiddleware
 
 settings = get_settings()
 
@@ -70,7 +70,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
+app.add_middleware(PerformanceMetricsMiddleware)
 # --- Router'ları bağla ---
 app.include_router(api_router, prefix="/api/v1")
 

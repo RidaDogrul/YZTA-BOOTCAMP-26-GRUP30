@@ -52,6 +52,7 @@ from src.connectors.postgres import PostgresConnector
 from src.connectors.schema_extractor import extract_schema, schema_to_prompt_string
 from src.agents.prompts import SQL_EXECUTOR_SYSTEM_PROMPT
 from src.utils.logger import get_logger
+from src.utils.metrics import log_token_usage
 
 logger = get_logger(__name__)
 
@@ -232,6 +233,7 @@ class SQLExecutor:
         ]
 
         response = self._llm.invoke(messages)
+        log_token_usage(response)
         raw: str = response.content.strip()
         sql = _extract_sql(raw)
 
