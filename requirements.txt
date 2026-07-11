@@ -20,3 +20,8 @@ pandas
 pymysql
 snowflake-sqlalchemy
 pre-commit
+
+prophet
+lightgbm
+statsmodels
+scikit-learn
