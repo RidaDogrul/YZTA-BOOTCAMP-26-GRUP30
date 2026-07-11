@@ -10,7 +10,7 @@ from prophet import Prophet
 from statsmodels.tsa.arima.model import ARIMA
 
 from src.utils.logger import get_logger
-
+from src.utils.metrics import measure_model_inference
 
 ModelName = Literal["prophet", "arima", "lightgbm"]
 AggregationMethod = Literal["sum", "mean"]
@@ -454,12 +454,16 @@ def model_selector(
 
     for model_name in model_names:
         try:
-            validation_forecast = _forecast_with_model(
-                model_name=model_name,
-                train=train,
-                prediction_dates=validation["ds"],
-                config=config,
-            )
+            with measure_model_inference(
+                 model_name=model_name,
+                 phase="validation",
+            ):
+                 validation_forecast = _forecast_with_model(
+                  model_name=model_name,
+                  train=train,
+                  prediction_dates=validation["ds"],
+                  config=config,
+                )
             score = evaluate_forecast(
                 validation=validation,
                 forecast=validation_forecast,
@@ -495,12 +499,16 @@ def model_selector(
     future_dates = create_future_dates(time_series, config=config)
 
     try:
-        final_forecast = _forecast_with_model(
-            model_name=selected_model,
-            train=time_series,
-            prediction_dates=future_dates,
-            config=config,
-        )
+        with measure_model_inference(
+             model_name=selected_model,
+            phase="final_forecast",
+        ):
+            final_forecast = _forecast_with_model(
+               model_name=selected_model,
+               train=time_series,
+               prediction_dates=future_dates,
+               config=config,
+            )
     except Exception as exc:
         raise RuntimeError(
             f"Seçilen {selected_model} modeli nihai tahmini üretemedi: {exc}"
