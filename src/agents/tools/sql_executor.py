@@ -39,8 +39,8 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, cast
 
 import pandas as pd
 from langchain_core.messages import HumanMessage, SystemMessage
@@ -49,7 +49,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from src.agents.llm import get_llm
 from src.connectors.base import BaseConnector
 from src.connectors.postgres import PostgresConnector
-from src.connectors.schema_extractor import extract_schema, schema_to_prompt_string
+from src.connectors.schema_extractor import schema_to_prompt_string
 from src.agents.prompts import SQL_EXECUTOR_SYSTEM_PROMPT
 from src.utils.logger import get_logger
 from src.utils.metrics import log_token_usage
@@ -124,7 +124,7 @@ class SQLExecutor:
         if connector is not None:
             self._connector = connector
         elif db_url is not None:
-            self._connector = PostgresConnector(db_url)
+            self._connector = cast(BaseConnector, PostgresConnector(db_url))
         else:
             raise ValueError("db_url veya connector parametrelerinden biri zorunludur.")
 
