@@ -10,6 +10,7 @@ Endpoint'ler:
     DELETE /connect-db/disconnect/{sid} → Oturumu kapat
     GET  /connect-db/sessions      → Tüm aktif oturumları listele (debug)
 """
+from typing import cast
 from fastapi import APIRouter, HTTPException, status
 from pydantic import SecretStr
 
@@ -295,7 +296,7 @@ def _build_connector(payload: ConnectDbRequest) -> BaseConnector:
     if payload.source_type == "postgresql":
         if not payload.connection_url:
             raise ValueError("PostgreSQL için connection_url zorunludur.")
-        return PostgresConnector(payload.connection_url)
+        return cast(BaseConnector, PostgresConnector(payload.connection_url))
 
     elif payload.source_type == "mysql":
         if not payload.connection_url:
@@ -305,7 +306,7 @@ def _build_connector(payload: ConnectDbRequest) -> BaseConnector:
     elif payload.source_type == "mongodb":
         if not payload.mongodb_uri:
             raise ValueError("MongoDB için mongodb_uri zorunludur.")
-        return MongoConnector(payload.mongodb_uri)
+        return cast(BaseConnector, MongoConnector(payload.mongodb_uri))
 
     elif payload.source_type == "s3":
         missing = [
@@ -325,7 +326,7 @@ def _build_connector(payload: ConnectDbRequest) -> BaseConnector:
             secret_access_key=SecretStr(payload.aws_secret_access_key),  # type: ignore[arg-type]
             prefix=payload.prefix or "",
         )
-        return S3Connector(config)
+        return cast(BaseConnector, S3Connector(config))
 
     elif payload.source_type == "snowflake":
         missing = [
@@ -348,7 +349,7 @@ def _build_connector(payload: ConnectDbRequest) -> BaseConnector:
             warehouse=payload.snowflake_warehouse,
             role=payload.snowflake_role,
         )
-        return SnowflakeConnector(sf_config)
+        return cast(BaseConnector, SnowflakeConnector(sf_config))
 
     raise ValueError(f"Desteklenmeyen kaynak tipi: {payload.source_type}")
 
