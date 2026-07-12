@@ -9,12 +9,19 @@ Sprint 2 scope:
 """
 
 from fastapi import APIRouter, HTTPException, status
-
+from src.utils.cache import make_cache_key, query_cache
 from src.api.v1.schemas.chat import ChatRequest, ChatResponse
 from src.api.v1.schemas.common import ErrorResponse
 
 router = APIRouter()
-
+CHAT_CACHE_TTL_SECONDS = 300.0
+def _build_chat_cache_key(payload: ChatRequest) -> str:
+    """Build a deterministic cache key for chat requests."""
+    return make_cache_key(
+        "chat",
+        payload.session_id.strip(),
+        payload.question.strip(),
+    )
 
 def _mock_orchestrator_response(payload: ChatRequest) -> ChatResponse:
     """
@@ -76,4 +83,18 @@ def ask_question(payload: ChatRequest) -> ChatResponse:
         )
 
     # TODO(Sprint-2): Replace mock response with real orchestrator call.
-    return _mock_orchestrator_response(payload)
+
+    cache_key = _build_chat_cache_key(payload)
+    cached_response = query_cache.get(cache_key)
+
+    if isinstance(cached_response, ChatResponse):
+        return cached_response
+
+    response = _mock_orchestrator_response(payload)
+    query_cache.set(
+        cache_key,
+        response,
+        ttl_seconds=CHAT_CACHE_TTL_SECONDS,
+    )
+
+    return response
