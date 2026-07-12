@@ -9,7 +9,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from src.connectors.snowflake_conn import SnowflakeConfig, SnowflakeConnector
+from src.connectors.snowflake_conn import SnowflakeConfig
 from src.utils.session_store import session_store
 
 client = TestClient(app)
