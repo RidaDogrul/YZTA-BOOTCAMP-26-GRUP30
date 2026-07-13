@@ -1,6 +1,6 @@
 """
 
-AI Agent Orchestrator (Task S2-H1)
+AI Agent Orchestrator (Görev S2-H1)
 -----------------------------------
 Kullanıcının sorusunu alır ve iki ajanı SIRAYLA çalıştırır:
   Agent 1 (Veri Çekme)     → veriyi getirir (SQL veya MongoDB)
@@ -31,10 +31,12 @@ Kullanım:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import cast
 
 import pandas as pd
 
 from src.agents.tools.sql_executor import SQLExecutor
+from src.connectors.base import BaseConnector
 from src.ml_models.preprocessor import DataCleaningPipeline
 from src.utils.logger import get_logger
 
@@ -96,7 +98,9 @@ class Orchestrator:
             self._mongo = connector
         elif connector is not None or db_url is not None:
             self._mode = "sql"
-            self._sql_executor = SQLExecutor(db_url=db_url, connector=connector)
+            # Bu dala girdiysek connector ya None ya da bir SQL BaseConnector'dır.
+            sql_connector = cast("BaseConnector | None", connector)
+            self._sql_executor = SQLExecutor(db_url=db_url, connector=sql_connector)
         else:
             raise ValueError("connector veya db_url parametrelerinden biri zorunludur.")
 
