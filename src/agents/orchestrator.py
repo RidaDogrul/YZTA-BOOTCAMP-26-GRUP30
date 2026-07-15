@@ -1,6 +1,6 @@
 """
 
-AI Agent Orchestrator (Görev S2-H1)
+AI Agent Orchestrator (Task S2-H1)
 -----------------------------------
 Kullanıcının sorusunu alır ve iki ajanı SIRAYLA çalıştırır:
   Agent 1 (Veri Çekme)     → veriyi getirir (SQL veya MongoDB)
@@ -10,8 +10,8 @@ Orchestrator, connector tipine bakıp doğru Agent 1'i otomatik seçer:
   - SQL connector (Postgres/MySQL) → SQLExecutor (Text-to-SQL)
   - Mongo connector               → find_documents (koleksiyon → DataFrame)
 
-Agent 2 (temizleme) her iki yol için de AYNIDIR; bir DataFrame alır, temiz
-DataFrame döndürür — verinin kaynağını umursamaz.
+Agent 2 (DataScientistAgent) her iki yol için de AYNIDIR; bir DataFrame alır,
+temiz DataFrame + yapısal rapor döndürür — verinin kaynağını umursamaz.
 
 Kullanım:
     # Postgres:
@@ -35,9 +35,9 @@ from typing import cast
 
 import pandas as pd
 
+from src.agents.data_scientist import DataScientistAgent
 from src.agents.tools.sql_executor import SQLExecutor
 from src.connectors.base import BaseConnector
-from src.ml_models.preprocessor import DataCleaningPipeline
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -58,6 +58,7 @@ class OrchestratorResult:
     raw_df: pd.DataFrame = field(default_factory=pd.DataFrame)      # temizlenmemiş veri
     cleaned_df: pd.DataFrame = field(default_factory=pd.DataFrame)  # Agent 2 çıktısı
     cleaning_summary: str = ""                                      # temizleme raporu (metin)
+    cleaning_report: dict = field(default_factory=dict)            # temizleme raporu (yapısal)
     row_count: int = 0                                              # temiz veri satır sayısı
     error: str | None = None                                       # hata varsa mesajı
     failed_stage: str | None = None                                # hata hangi adımda oldu
@@ -77,16 +78,16 @@ class Orchestrator:
     Args:
         db_url: SQLAlchemy bağlantı adresi (Postgres). MySQL için 'connector' geçir.
         connector: Hazır connector — SQL (BaseConnector) veya Mongo (MongoConnector).
-        cleaning_pipeline: Özel DataCleaningPipeline (verilmezse varsayılan kurulur).
+        data_scientist: Özel DataScientistAgent (verilmezse varsayılan kurulur).
     """
 
     def __init__(
         self,
         db_url: str | None = None,
         connector: object | None = None,
-        cleaning_pipeline: DataCleaningPipeline | None = None,
+        data_scientist: DataScientistAgent | None = None,
     ) -> None:
-        self._cleaning_pipeline = cleaning_pipeline or DataCleaningPipeline()
+        self._data_scientist = data_scientist or DataScientistAgent()
         self._sql_executor: SQLExecutor | None = None
         self._mongo: object | None = None
         self._row_limit = DEFAULT_ROW_LIMIT
@@ -141,21 +142,19 @@ class Orchestrator:
             return result
 
         # -------------------- Agent 2: Data Scientist --------------------
-        logger.info("Agent 2 (Data Scientist) başlıyor", extra={"rows": len(result.raw_df)})
-        try:
-            cleaned_df = self._cleaning_pipeline.fit_transform(result.raw_df)
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Agent 2 başarısız", extra={"error": str(exc)})
-            # Agent 2 çökse bile ham veriyi kaybetme.
-            result.cleaned_df = result.raw_df
-            result.row_count = len(result.raw_df)
-            result.error = f"Veri temizleme hatası: {exc}"
+        # Temizlemenin tüm detayı (loglama, hata yönetimi) artık ajanın içinde.
+        cleaning = self._data_scientist.run(result.raw_df)
+
+        result.cleaned_df = cleaning.cleaned_df
+        result.row_count = len(cleaning.cleaned_df)
+        result.cleaning_summary = cleaning.summary
+        result.cleaning_report = cleaning.report
+
+        if not cleaning.success:
+            # Agent 2 çökse bile ham veriyi kaybetme (ajan onu geri döndürür).
+            result.error = cleaning.error
             result.failed_stage = "data_scientist"
             return result
-
-        result.cleaned_df = cleaned_df
-        result.row_count = len(cleaned_df)
-        result.cleaning_summary = self._cleaning_pipeline.report_.summary()
 
         logger.info("Orchestrator tamamlandı", extra={"final_rows": result.row_count})
         return result
@@ -253,6 +252,7 @@ if __name__ == "__main__":
             print(f"Ham veri boyutu   : {result.raw_df.shape}")
             print(f"Temiz veri boyutu : {result.cleaned_df.shape}\n")
             print(result.cleaning_summary)
+            print(f"\nYapısal rapor: {result.cleaning_report}")
             print(f"\nİlk satırlar:\n{result.cleaned_df.head()}")
         else:
             print(f"HATA ({result.failed_stage}): {result.error}")
