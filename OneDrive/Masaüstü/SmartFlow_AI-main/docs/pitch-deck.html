@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SmartFlow AI — Pitch Deck</title>
+  <style>
+    @page { size: A4 landscape; margin: 14mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: #0f172a;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .slide {
+      width: 100%;
+      min-height: 178mm;
+      page-break-after: always;
+      break-after: page;
+      padding: 8mm 10mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .slide:last-of-type { page-break-after: auto; break-after: auto; }
+    h1 {
+      font-size: 2.35rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin-bottom: 0.35em;
+    }
+    h2 {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #1e3a5f;
+      margin-bottom: 0.6em;
+      border-bottom: 3px solid #2563eb;
+      padding-bottom: 0.25em;
+      display: inline-block;
+    }
+    h3 { font-size: 1.05rem; color: #334155; margin: 0.85em 0 0.35em; font-weight: 600; }
+    p, li { font-size: 0.95rem; line-height: 1.5; color: #334155; }
+    ul { margin: 0.4em 0 0 1.15em; }
+    li { margin: 0.25em 0; }
+    .muted { color: #64748b; font-size: 0.88rem; }
+    .tagline { font-size: 1.15rem; color: #475569; max-width: 85%; margin-top: 0.5rem; }
+    .cover {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 45%, #2563eb 100%);
+      color: #f8fafc;
+      justify-content: center;
+      align-items: flex-start;
+      padding-left: 14mm;
+    }
+    .cover h1 { color: #fff; font-size: 2.75rem; margin-bottom: 0.2em; }
+    .cover .tagline { color: #cbd5e1; max-width: 90%; }
+    .cover .meta { margin-top: 2rem; font-size: 0.9rem; color: #94a3b8; }
+    .logo-mark {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: #93c5fd;
+      margin-bottom: 1.2rem;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 2rem; margin-top: 0.5rem; }
+    .card {
+      background: #f1f5f9;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      border-left: 4px solid #2563eb;
+    }
+    .card strong { color: #1e40af; display: block; margin-bottom: 0.25rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 0.5rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 0.45rem 0.55rem; text-align: left; vertical-align: top; }
+    th { background: #1e40af; color: #fff; font-weight: 600; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .arch {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size: 0.78rem;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      white-space: pre;
+      line-height: 1.45;
+      margin-top: 0.5rem;
+    }
+    .closing {
+      background: linear-gradient(160deg, #f8fafc 0%, #e0e7ff 100%);
+      border: 1px solid #c7d2fe;
+    }
+    .quote {
+      font-size: 1.05rem;
+      font-style: italic;
+      color: #1e3a8a;
+      border-left: 4px solid #2563eb;
+      padding: 0.75rem 1rem;
+      margin: 1rem 0;
+      background: rgba(255,255,255,0.7);
+      border-radius: 0 8px 8px 0;
+    }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+    .pill {
+      background: #dbeafe;
+      color: #1e40af;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1 Kapak -->
+  <section class="slide cover">
+    <div class="logo-mark">Operasyon • Yapay Zeka • KOBİ</div>
+    <h1>SmartFlow AI</h1>
+    <p class="tagline">KOBİ ve üretici kooperatifleri için veri destekli yapay zeka operasyon asistanı — müşteri iletişimi, sipariş, kargo, stok ve günlük görevler tek akışta.</p>
+    <p class="meta">Pitch deck · 10 sayfa · Mayıs 2026</p>
+  </section>
+
+  <!-- 2 Problem -->
+  <section class="slide">
+    <h2>Problem</h2>
+    <p>Küçük işletmeler operasyonu çoğu zaman dağınık araçlar ve manuel takiple yürütür. Bu da müşteri deneyimini, stok görünürlüğünü ve yönetici tepki süresini zayıflatır.</p>
+    <div class="grid-2" style="margin-top:1rem;">
+      <div class="card"><strong>Geciken cevaplar</strong> Mesajlar, sipariş ve kargo durumu farklı yerlerde; müşteri soruları hızlı ve tutarlı yanıtlanamaz.</div>
+      <div class="card"><strong>Geç fark edilen riskler</strong> Kritik stok ve kargo gecikmeleri genelde müşteri şikayetinden sonra görünür hale gelir.</div>
+      <div class="card"><strong>Dağınık görevler</strong> Günlük operasyon öncelikleri net bir brifing olmadan kişiye ve güne bağlı kalır.</div>
+      <div class="card"><strong>Verimsizlik</strong> Aynı veriyi tekrar tekrar aramak, kopyalamak ve raporlamak ekip kapasitesini tüketir.</div>
+    </div>
+  </section>
+
+  <!-- 3 Çözüm -->
+  <section class="slide">
+    <h2>Çözüm: SmartFlow AI</h2>
+    <p class="tagline" style="max-width:100%; color:#334155;">Müşteri mesajını anlayan, işletmenin <strong>gerçek operasyon verisini</strong> (sipariş, ürün, kargo, stok) yapılandırılmış tool çağrılarıyla sorgulayan ve hem müşteriye hem yöneticiye <strong>aksiyon odaklı</strong> çıktı üreten tek ajanlı asistan.</p>
+    <h3>Temel değer önerisi</h3>
+    <ul>
+      <li>Müşteri tarafında: doğrulanabilir, veriye dayalı yanıtlar (tahmini teslimat, gecikme günü, stok durumu).</li>
+      <li>Yönetici tarafında: özet panel, kritik stok ve kargo uyarıları, tedarikçi e-posta taslağı, günlük operasyon brifingi.</li>
+      <li>Klasik sohbet botu değil: <strong>function calling</strong> ile doğrudan veri katmanına bağlı akış.</li>
+    </ul>
+  </section>
+
+  <!-- 4 Hedef kitle -->
+  <section class="slide">
+    <h2>Hedef kitle ve kullanım</h2>
+    <div class="grid-2">
+      <div>
+        <h3>Kimler için?</h3>
+        <ul>
+          <li>Küçük ve orta ölçekli üretici / satıcı işletmeler.</li>
+          <li>Üretici kooperatifleri ve ortak depo–sevkiyat modeli.</li>
+          <li>Sipariş + kargo + stok üçgeninde günlük yoğun trafik yaşayan ekipler.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Kullanıcı rolleri</h3>
+        <ul>
+          <li><strong>Müşteri / son kullanıcı:</strong> doğal dil ile sipariş, ürün ve kargo soruları.</li>
+          <li><strong>Operasyon / yönetici:</strong> dashboard, görev listesi, uyarı ve brifing.</li>
+        </ul>
+        <p class="muted" style="margin-top:0.75rem;">MVP odak: stabil demo, tek ajan, SQLite üzerinde yapısal veri — ölçek ve entegrasyonlar sonraki faz.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 Ürün -->
+  <section class="slide">
+    <h2>Ürün özellikleri</h2>
+    <table>
+      <thead>
+        <tr><th>Özellik</th><th>Açıklama</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>AI müşteri sohbeti</td><td><code>POST /api/chat</code> — intent ve varlık çıkarımı; sipariş no ve ürün adı ile veri sorgusu.</td></tr>
+        <tr><td>Yönetici özeti</td><td><code>GET /api/dashboard/summary</code> — gecikmiş kargo, kritik stok, görev ve mesaj özeti.</td></tr>
+        <tr><td>Günlük brifing</td><td><code>POST /api/tasks/generate</code> — operasyon görevleri ve günün öncelikleri için AI özeti.</td></tr>
+        <tr><td>Uyarı kanalı</td><td><code>POST /api/alerts/send</code> — yöneticiye e-posta uyarısı (Resend entegrasyonu).</td></tr>
+        <tr><td>Tedarikçi iletişimi</td><td>Kritik stok için tedarikçi e-posta taslağı üretimi ve panelde gösterim.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 6 Mimari -->
+  <section class="slide">
+    <h2>Teknik mimari</h2>
+    <p class="muted">Uçtan uca akış: sohbet ve panel → FastAPI → Gemini tabanlı ajan + tool gönderici → SQLAlchemy / SQLite.</p>
+    <div class="arch">Müşteri Chat / Yönetici Dashboard
+        |
+      FastAPI
+        |
+ Gemini AI Agent + Tool Dispatcher
+        |
+ SQLAlchemy / SQLite
+        |
+ Orders, Products, Shipments, Tasks, Messages</div>
+    <p style="margin-top:0.75rem;">Gemini API kullanılamadığında, aynı tool fonksiyonlarını kullanan <strong>deterministic fallback</strong> ile demo ve testler kırılmadan çalışır.</p>
+  </section>
+
+  <!-- 7 Case'ler -->
+  <section class="slide">
+    <h2>Kapsanan senaryolar (MVP)</h2>
+    <table>
+      <thead>
+        <tr><th>#</th><th>Senaryo</th><th>Sistem karşılığı</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>1</td><td>Müşteri iletişiminin otomasyonu</td><td>Chat intent’leri ve veri destekli cevap</td></tr>
+        <tr><td>2</td><td>Ürün ve sipariş takibi</td><td>Sipariş / ürün API’leri ve dashboard</td></tr>
+        <tr><td>3</td><td>Kargo süreçleri</td><td>Gecikmiş kargo tespiti ve uyarı metinleri</td></tr>
+        <tr><td>4</td><td>Stok ve envanter</td><td>Kritik stok eşiği ve tedarikçi taslağı</td></tr>
+        <tr><td>5</td><td>İş akışı ve görevler</td><td>Günlük operasyon brifingi ve görev özeti</td></tr>
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top:0.5rem;">MVP kapsam dışı örnekler: gelişmiş analitik/tahmin, gerçek WhatsApp, canlı kargo API’leri, vektör veritabanı ve çoklu-ajan orkestrasyonu.</p>
+  </section>
+
+  <!-- 8 Teknoloji -->
+  <section class="slide">
+    <h2>Teknoloji yığını</h2>
+    <div class="pill-row">
+      <span class="pill">FastAPI</span>
+      <span class="pill">Python</span>
+      <span class="pill">SQLAlchemy 2</span>
+      <span class="pill">SQLite</span>
+      <span class="pill">Pydantic v2</span>
+      <span class="pill">Gemini API</span>
+      <span class="pill">Tool calling</span>
+      <span class="pill">Resend</span>
+      <span class="pill">Vite + React</span>
+      <span class="pill">Docker Compose</span>
+    </div>
+    <h3>AI yaklaşımı</h3>
+    <ul>
+      <li>Intent sınıfları: sipariş durumu, ürün bilgisi, kargo, stok uyarısı, günlük brifing, genel.</li>
+      <li>Tool örnekleri: <code>get_order_status</code>, <code>get_product_info</code>, <code>get_cargo_status</code>, <code>check_stock_alerts</code>, <code>draft_supplier_email</code>, <code>generate_daily_briefing</code>, <code>send_manager_alert</code>.</li>
+    </ul>
+    <p class="muted" style="margin-top:0.5rem;">Türkçe durum metinleri (ör. “Gecikmiş”, “Kargoda”) iş mantığı ve testlerle uyumlu tutulur.</p>
+  </section>
+
+  <!-- 9 Yol haritası -->
+  <section class="slide">
+    <h2>Yol haritası</h2>
+    <div class="grid-2">
+      <div class="card"><strong>Bugün (MVP)</strong> Tek ajan, SQLite, chat + dashboard + seed verisi; jüri ve yatırımcı için tekrarlanabilir demo; pytest ile sözleşme testleri.</div>
+      <div class="card"><strong>Kısa vade</strong> Gerçek mesajlaşma kanalları (ör. WhatsApp Business), canlı kargo ve ödeme entegrasyonları için bağlayıcı tasarım.</div>
+      <div class="card"><strong>Orta vade</strong> Kullanıcı yetkilendirme, rate limiting, üretim dağıtımı, gözlemlenebilirlik.</div>
+      <div class="card"><strong>Uzun vade</strong> Analitik ve tahmin (Case 6), çoklu depo ve rota optimizasyonu gibi ileri operasyon modülleri.</div>
+    </div>
+  </section>
+
+  <!-- 10 Kapanış -->
+  <section class="slide closing">
+    <h2>Kapanış</h2>
+    <div class="quote">“SmartFlow AI klasik bir chatbot değil; işletmenin operasyon verisini tool / function calling ile sorgulayan ve yönetici aksiyonu üreten bir yapay zeka asistanıdır.”</div>
+    <p><strong>SmartFlow AI</strong> — KOBİ operasyonunda hız, şeffaflık ve öngörülebilir müşteri deneyimi için tasarlandı.</p>
+    <p class="muted" style="margin-top:1.25rem;">Kaynak: README, mimari ve demo senaryosu dokümantasyonu · Bu PDF <code>docs/pitch-deck.html</code> üzerinden üretilmiştir.</p>
+  </section>
+
+</body>
+</html>

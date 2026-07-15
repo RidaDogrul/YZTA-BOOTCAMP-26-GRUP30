@@ -1,0 +1,1226 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SmartFlow AI — Yönetici Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:#0d0f14; --panel:#13161d; --border:#1f2330; --border2:#2a3047;
+  --text:#e2e8f0; --muted:#94a3b8; --muted-dim:#64748b;
+  --accent:#2563eb; --accent-bg:#2563eb; --accent-hover:#1d4ed8; --accent-text:#60a5fa;
+  --green:#22c55e; --yellow:#eab308;
+  --red:#f87171; --orange:#fb923c; --purple:#c084fc;
+  --blue:#60a5fa; --cyan:#22d3ee;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-track{background:var(--bg)} ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* ── App Layout ── */
+.app{display:flex;height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{
+  width:224px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:22px 0;
+  position:fixed;top:0;left:0;bottom:0;z-index:100;
+}
+.logo{padding:0 20px 20px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.logo-mark{font-family:var(--mono);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:4px}
+.logo-name{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.logo-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.nav-section{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:2px;color:var(--muted);padding:13px 20px 5px}
+.nav-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 20px;font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;transition:all .15s;border-left:2px solid transparent;text-decoration:none;
+  user-select:none;
+}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(59,130,246,.07)}
+.nb{
+  margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:600;
+  padding:1px 6px;border-radius:10px;
+  background:rgba(168,85,247,.18);color:var(--purple);
+}
+.nb.red{background:rgba(239,68,68,.18);color:var(--red)}
+.nb.orange{background:rgba(249,115,22,.18);color:var(--orange)}
+.sidebar-bottom{margin-top:auto;padding:14px 20px 0;border-top:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:10px;padding:10px 0}
+.avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--purple));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0}
+.user-name{font-size:12px;font-weight:600}
+.user-role{font-size:10px;color:var(--muted);font-family:var(--mono)}
+
+/* ── Main ── */
+.main{margin-left:224px;flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* ── Topbar ── */
+.topbar{
+  padding:13px 26px;background:var(--panel);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;
+}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.page-title{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.page-sub{font-size:11px;color:var(--muted)}
+.live-pill{display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);padding:3px 10px;border-radius:20px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.live-text{font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:1px}
+.topbar-right{display:flex;align-items:center;gap:9px}
+.clock{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+/* ── Buttons ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;border:none;font-family:var(--sans)}
+.btn-primary{background:var(--accent-bg);color:#fff} .btn-primary:hover{background:var(--accent-hover)}
+.btn-danger{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25)} .btn-danger:hover{background:rgba(239,68,68,.22)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)} .btn-ghost:hover{color:var(--text);border-color:var(--border2);background:rgba(255,255,255,.03)}
+.btn-purple{background:rgba(168,85,247,.12);color:var(--purple);border:1px solid rgba(168,85,247,.25)} .btn-purple:hover{background:rgba(168,85,247,.22)}
+.btn-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.25)} .btn-green:hover{background:rgba(34,197,94,.22)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Page Views ── */
+.page{display:none;flex:1;overflow-y:auto;padding:20px 26px;flex-direction:column;gap:16px}
+.page.active{display:flex}
+
+/* ── Stat Grid ── */
+.stat-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:10px}
+.stat-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:10px;
+  padding:14px 14px 12px;position:relative;overflow:hidden;transition:border-color .2s;cursor:default;
+}
+.stat-card:hover{border-color:var(--border2)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ca,var(--accent))}
+.stat-icon{font-size:15px;margin-bottom:8px;display:block}
+.stat-value{font-family:var(--mono);font-size:22px;font-weight:600;line-height:1;color:var(--text);margin-bottom:3px}
+.stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;font-family:var(--mono)}
+.stat-delta{position:absolute;top:11px;right:11px;font-family:var(--mono);font-size:9px;padding:2px 5px;border-radius:4px}
+.d-up{background:rgba(34,197,94,.12);color:var(--green)}
+.d-down{background:rgba(239,68,68,.12);color:var(--red)}
+.d-neu{background:rgba(100,116,139,.12);color:var(--muted)}
+.d-warn{background:rgba(249,115,22,.12);color:var(--orange)}
+.d-pur{background:rgba(168,85,247,.12);color:var(--purple)}
+
+/* ── Section header ── */
+.shdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.stitle{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+.scnt{font-family:var(--mono);font-size:10px;background:var(--border);color:var(--muted);padding:2px 7px;border-radius:10px}
+
+/* ── Table panel ── */
+.table-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow-x:auto;overflow-y:hidden}
+table{width:100%;min-width:820px;border-collapse:collapse;font-size:12.5px}
+thead th{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:10px 15px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;font-weight:500}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody td{padding:10px 15px;vertical-align:middle}
+.cm{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.cb{font-weight:500}
+
+/* ── Badges ── */
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:100px;font-size:10.5px;font-weight:500;white-space:nowrap}
+.bd{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.b-green{background:rgba(34,197,94,.12);color:var(--green)} .b-green .bd{background:var(--green)}
+.b-blue{background:rgba(59,130,246,.12);color:var(--blue)} .b-blue .bd{background:var(--blue)}
+.b-yellow{background:rgba(234,179,8,.12);color:var(--yellow)} .b-yellow .bd{background:var(--yellow)}
+.b-red{background:rgba(239,68,68,.12);color:var(--red)} .b-red .bd{background:var(--red)}
+.b-orange{background:rgba(249,115,22,.12);color:var(--orange)} .b-orange .bd{background:var(--orange)}
+.b-purple{background:rgba(168,85,247,.12);color:var(--purple)} .b-purple .bd{background:var(--purple)}
+.b-cyan{background:rgba(6,182,212,.12);color:var(--cyan)} .b-cyan .bd{background:var(--cyan)}
+.b-gray{background:rgba(100,116,139,.12);color:var(--muted)} .b-gray .bd{background:var(--muted)}
+
+.pri{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600}
+.pri-K{background:rgba(239,68,68,.15);color:var(--red)}
+.pri-Y{background:rgba(249,115,22,.15);color:var(--orange)}
+.pri-O{background:rgba(234,179,8,.15);color:var(--yellow)}
+.pri-D{background:rgba(34,197,94,.15);color:var(--green)}
+
+/* ── Two col ── */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+
+/* ── Alert panel ── */
+.alert-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.ai-row{display:flex;align-items:flex-start;gap:11px;padding:11px 15px;border-bottom:1px solid var(--border);transition:background .1s}
+.ai-row:last-child{border-bottom:none}
+.ai-row:hover{background:rgba(255,255,255,.02)}
+.ai-ic{font-size:14px;flex-shrink:0;margin-top:1px}
+.ai-bd{flex:1;min-width:0}
+.ai-t{font-size:12.5px;font-weight:500;color:var(--text);margin-bottom:2px}
+.ai-m{font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+/* ── Stock bar ── */
+.sbw{display:flex;align-items:center;gap:8px;margin-top:5px}
+.sb{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.sbf{height:100%;border-radius:2px;transition:width .6s ease}
+.sbp{font-family:var(--mono);font-size:10px;color:var(--muted);min-width:76px;text-align:right}
+
+/* ── Pending actions ── */
+.action-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.act{display:flex;align-items:center;gap:12px;padding:11px 15px;border-bottom:1px solid var(--border);transition:background .1s}
+.act:last-child{border-bottom:none}
+.act:hover{background:rgba(255,255,255,.02)}
+.act-l{flex:1;min-width:0}
+.act-t{font-size:12.5px;font-weight:500;color:var(--text);margin-bottom:2px}
+.act-s{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.act-r{display:flex;align-items:center;gap:7px;flex-shrink:0}
+
+/* ── AI Briefing ── */
+.ai-panel{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:17px}
+.aihdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.ailbl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600}
+.chip{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:1px;padding:2px 7px;border-radius:4px}
+.chip-blue{background:rgba(59,130,246,.12);color:var(--accent-text);border:1px solid rgba(96,165,250,.25)}
+.chip-purple{background:rgba(168,85,247,.1);color:var(--purple);border:1px solid rgba(168,85,247,.2)}
+.chip-green{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.brief-body{font-size:13px;line-height:1.75;color:#94a3b8;border-left:2px solid var(--accent);padding-left:14px;min-height:54px}
+.brief-body.loading{display:flex;align-items:center;gap:8px;font-style:italic;color:var(--muted)}
+.spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bftr{margin-top:10px;display:flex;align-items:center;justify-content:space-between}
+.bftr-meta{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.tool-tags{display:flex;gap:5px;flex-wrap:wrap}
+
+/* ── Dashboard notes ── */
+#dashNotes{display:flex;flex-direction:column;gap:5px}
+.dnote{background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:9px 13px;display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:#c4b5fd;line-height:1.5}
+.dnote-close{margin-left:auto;cursor:pointer;color:var(--muted);font-size:14px;flex-shrink:0;padding:0 2px;transition:color .15s}
+.dnote-close:hover{color:var(--text)}
+
+/* ── Detail card ── */
+.detail-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px}
+.detail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:12px}
+.detail-field label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:3px}
+.detail-field span{font-size:13px;font-weight:500}
+
+/* ── Filter bar ── */
+.filter-bar{display:flex;align-items:center;gap:8px}
+.filter-bar select,.filter-bar input{
+  background:var(--bg);border:1px solid var(--border);color:var(--muted);
+  padding:6px 10px;border-radius:6px;font-size:11px;font-family:var(--mono);
+  transition:border-color .15s;
+}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--accent);color:var(--text)}
+
+/* ── Modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border2);border-radius:12px;width:100%;max-width:560px;max-height:88vh;display:flex;flex-direction:column;animation:mi .2s ease}
+@keyframes mi{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+.mhdr{padding:15px 19px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mtitle{font-size:14px;font-weight:600}
+.mclose{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:2px 6px;border-radius:4px;transition:all .1s}
+.mclose:hover{background:var(--border);color:var(--text)}
+.mbody{padding:19px;overflow-y:auto;flex:1}
+.mftr{padding:13px 19px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+.field{margin-bottom:13px}
+.field label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px;display:block}
+.field input,.field textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--sans);font-size:13px;padding:9px 12px;transition:border-color .15s}
+.field input:focus,.field textarea:focus{outline:none;border-color:var(--accent)}
+.field textarea{resize:vertical;min-height:130px;line-height:1.6}
+
+/* ── Toast ── */
+.toast-wrap{position:fixed;bottom:18px;right:18px;z-index:2000;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .2s ease;max-width:310px}
+@keyframes tin{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--blue)}
+.toast.warn{border-left:3px solid var(--orange)}
+
+.sk{background:linear-gradient(90deg,var(--border) 25%,var(--border2) 50%,var(--border) 75%);background-size:200% 100%;animation:sh 1.5s infinite;border-radius:4px;display:inline-block}
+@keyframes sh{to{background-position:-200% 0}}
+.fi{animation:fi .35s ease both}
+@keyframes fi{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.empty{padding:22px;text-align:center;color:var(--muted);font-size:13px}
+.divider{height:1px;background:var(--border);margin:4px 0}
+
+@media(max-width:1500px){.stat-grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:1100px){.stat-grid{grid-template-columns:repeat(3,1fr)};.two-col{grid-template-columns:1fr}}
+@media(max-width:768px){
+  .app{height:auto;min-height:100vh;flex-direction:column}
+  .sidebar{position:static;width:100%;max-height:none;padding:14px 0}
+  .main{margin-left:0;overflow:visible}
+  .topbar{padding:12px 16px;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .topbar-right{width:100%;justify-content:flex-start;flex-wrap:wrap}
+  .page{padding:16px}
+  .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .shdr{align-items:flex-start;gap:8px;flex-direction:column}
+  .filter-bar{width:100%;justify-content:flex-start;flex-wrap:wrap}
+  .filter-bar select,.filter-bar input{width:100%;min-width:0}
+  .act{align-items:flex-start;flex-wrap:wrap}
+  .act-r{width:100%;justify-content:flex-start;flex-wrap:wrap}
+  .aihdr,.bftr{align-items:flex-start;gap:8px;flex-direction:column}
+  .toast-wrap{right:12px;left:12px;bottom:12px}
+  .toast{max-width:none}
+}
+@media(max-width:520px){.stat-grid{grid-template-columns:1fr}.btn{justify-content:center;white-space:normal}.mftr{flex-direction:column-reverse}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ══════════════════ SIDEBAR ══════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">SmartFlow AI</div>
+    <div class="logo-name">Yönetici Paneli</div>
+    <div class="logo-sub">KOBİ Operasyon Asistanı</div>
+  </div>
+
+  <span class="nav-section">Genel</span>
+  <div class="nav-item active" data-page="dashboard">⬛ Dashboard</div>
+
+  <span class="nav-section">Operasyon</span>
+  <div class="nav-item" data-page="orders">📦 Siparişler <span class="nb red" id="nb-late">—</span></div>
+  <div class="nav-item" data-page="shipments">🚚 Kargolar</div>
+  <div class="nav-item" data-page="products">🗃️ Ürünler <span class="nb orange" id="nb-crit">—</span></div>
+  <div class="nav-item" data-page="tasks">📋 Görevler</div>
+
+  <span class="nav-section">Aksiyonlar</span>
+  <div class="nav-item" data-page="pending">⏳ Onay Bekleyenler <span class="nb" id="nb-pend">—</span></div>
+  <div class="nav-item" onclick="openMailModal()">✉️ Tedarikçi Mail</div>
+  <div class="nav-item" onclick="goPage('chat')">💬 Müşteri Chat</div>
+
+  <div class="sidebar-bottom">
+    <div class="user-chip">
+      <div class="avatar">AY</div>
+      <div>
+        <div class="user-name">Ahmet Yılmaz</div>
+        <div class="user-role">ADMIN</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════ MAIN ══════════════════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="page-title" id="topTitle">Genel Bakış</div>
+      <div class="live-pill"><div class="live-dot"></div><span class="live-text">Canlı</span></div>
+    </div>
+    <div class="topbar-right">
+      <span class="clock" id="clock">--:--:--</span>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↻ Yenile</button>
+      <button class="btn btn-purple btn-sm" onclick="openMailModal()">✉️ Tedarikçi Mail</button>
+      <button class="btn btn-danger" onclick="sendManagerAlert(event)">🔔 Yönetici Uyarısı Gönder</button>
+    </div>
+  </div>
+
+  <!-- ════════ PAGE: DASHBOARD ════════ -->
+  <div class="page active" id="page-dashboard">
+
+    <!-- Dashboard notes -->
+    <div id="dashNotes"></div>
+
+    <!-- 7 stat cards — GET /api/dashboard/summary -->
+    <div class="stat-grid">
+      <div class="stat-card fi" style="--ca:#64748b">
+        <span class="stat-icon">📦</span>
+        <div class="stat-value" id="s-total"><span class="sk" style="width:36px;height:22px;display:block"></span></div>
+        <div class="stat-label">Toplam Sipariş</div>
+        <span class="stat-delta d-neu" id="sd-total">—</span>
+      </div>
+      <div class="stat-card fi" style="--ca:#eab308">
+        <span class="stat-icon">🔧</span>
+        <div class="stat-value" id="s-prep"><span class="sk" style="width:36px;height:22px;display:block"></span></div>
+        <div class="stat-label">Hazırlanıyor</div>
+        <span class="stat-delta d-neu" id="sd-prep">—</span>
+      </div>
+      <div class="stat-card fi" style="--ca:#06b6d4">
+        <span class="stat-icon">🚚</span>
+        <div class="stat-value" id="s-ship"><span class="sk" style="width:36px;height:22px;display:block"></span></div>
+        <div class="stat-label">Kargoda</div>
+        <span class="stat-delta d-neu" id="sd-ship">—</span>
+      </div>
+      <div class="stat-card fi" style="--ca:#22c55e">
+        <span class="stat-icon">✅</span>
+        <div class="stat-value" id="s-del"><span class="sk" style="width:36px;height:22px;display:block"></span></div>
+        <div class="stat-label">Teslim Edildi</div>
+        <span class="stat-delta d-up" id="sd-del">—</span>
+      </div>
+      <div class="stat-card fi" style="--ca:#ef4444">
+        <span class="stat-icon">⏰</span>
+        <div class="stat-value" id="s-late"><span class="sk" style="width:36px;height:22px;display:block"></span></div>
+        <div class="stat-label">Gecikmiş</div>
+        <span class="stat-delta d-down" id="sd-late">—</span>
+      </div>
+      <div class="stat-card fi" style="--ca:#f97316">
+        <span class="stat-icon">⚡</span>
+        <div class="stat-value" id="s-crit"><span class="sk" style="width:36px;height:22px;display:block"></span></div>
+        <div class="stat-label">Kritik Stok</div>
+        <span class="stat-delta d-warn" id="sd-crit">—</span>
+      </div>
+      <div class="stat-card fi" style="--ca:#a855f7">
+        <span class="stat-icon">⏳</span>
+        <div class="stat-value" id="s-pend"><span class="sk" style="width:36px;height:22px;display:block"></span></div>
+        <div class="stat-label">Onay Bekliyor</div>
+        <span class="stat-delta d-pur" id="sd-pend">—</span>
+      </div>
+    </div>
+
+    <!-- AI Briefing — POST /api/tasks/generate -->
+    <div class="ai-panel fi">
+      <div class="aihdr">
+        <div class="ailbl">
+          🤖 AI Günlük Brifing
+          <span class="chip chip-blue">Gemini</span>
+          <span class="chip chip-purple">generate_daily_briefing</span>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="briefBtn" onclick="loadBriefing(true)">↻ Yenile</button>
+      </div>
+      <div class="brief-body loading" id="briefBody">
+        <div class="spinner"></div><span>POST /api/tasks/generate çağrılıyor…</span>
+      </div>
+      <div class="bftr" id="briefFtr" style="display:none">
+        <span class="bftr-meta" id="briefMeta"></span>
+        <div class="tool-tags" id="briefTools"></div>
+      </div>
+    </div>
+
+    <!-- Gecikmiş + Kritik Stok -->
+    <div class="two-col">
+      <div>
+        <div class="shdr">
+          <div class="stitle">⏰ Gecikmiş Siparişler <span class="scnt" id="lateCount">—</span></div>
+          <button class="btn btn-ghost btn-sm" onclick="goPage('orders')">Tümü →</button>
+        </div>
+        <div class="alert-panel" id="latePanel"><div class="empty">Yükleniyor…</div></div>
+      </div>
+      <div>
+        <div class="shdr">
+          <div class="stitle">⚡ Kritik Stok Uyarısı <span class="scnt" id="critCount">—</span></div>
+          <button class="btn btn-ghost btn-sm" onclick="openMailModal()">Mail Gönder →</button>
+        </div>
+        <div class="alert-panel" id="critPanel"><div class="empty">Yükleniyor…</div></div>
+      </div>
+    </div>
+
+    <!-- Onay Bekleyenler -->
+    <div>
+      <div class="shdr">
+        <div class="stitle">⏳ Onay Bekleyen Aksiyonlar <span class="scnt" id="pendCount">—</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="goPage('pending')">Tümünü Gör →</button>
+      </div>
+      <div class="action-panel" id="pendPanel"><div class="empty">Yükleniyor…</div></div>
+    </div>
+
+    <!-- Kargo + Chart -->
+    <div class="two-col">
+      <div>
+        <div class="shdr">
+          <div class="stitle">🚚 Son Kargolar</div>
+          <button class="btn btn-ghost btn-sm" onclick="goPage('shipments')">Tümü →</button>
+        </div>
+        <div class="table-panel">
+          <table>
+            <thead><tr><th>Takip No</th><th>Sipariş</th><th>Firma</th><th>Durum</th><th>ETA</th></tr></thead>
+            <tbody id="shipMini"><tr><td colspan="5" class="empty">Yükleniyor…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div>
+        <div class="shdr"><div class="stitle">📊 Sipariş Dağılımı</div></div>
+        <div class="alert-panel" style="padding:16px">
+          <canvas id="orderChart" height="168"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /dashboard -->
+
+  <!-- ════════ PAGE: SİPARİŞLER ════════ -->
+  <!-- GET /api/orders -->
+  <div class="page" id="page-orders">
+    <div class="shdr">
+      <div class="stitle">📦 Siparişler <span class="scnt" id="ord-count">—</span></div>
+      <div class="filter-bar">
+        <select id="ord-filter-status" onchange="renderOrdersPage()">
+          <option value="">Tüm Durumlar</option>
+          <option value="Hazırlanıyor">Hazırlanıyor</option>
+          <option value="Kargoda">Kargoda</option>
+          <option value="Teslim Edildi">Teslim Edildi</option>
+        </select>
+        <select id="ord-filter-cargo" onchange="renderOrdersPage()">
+          <option value="">Tüm Kargo</option>
+          <option value="Gecikmiş">Gecikmiş</option>
+          <option value="Zamanında">Zamanında</option>
+          <option value="Dağıtımda">Dağıtımda</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Sipariş ID</th><th>Müşteri</th><th>Ürün</th>
+            <th>Adet</th><th>Durum</th><th>Kargo Durumu</th>
+            <th>Tahmini Teslimat</th><th>Gecikme</th><th>Tarih</th>
+          </tr>
+        </thead>
+        <tbody id="ordersTable"><tr><td colspan="9" class="empty">Yükleniyor…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════ PAGE: KARGOLAR ════════ -->
+  <!-- GET /api/shipments -->
+  <div class="page" id="page-shipments">
+    <div class="shdr">
+      <div class="stitle">🚚 Kargolar <span class="scnt" id="ship-count">—</span></div>
+      <div class="filter-bar">
+        <select id="ship-filter" onchange="renderShipmentsPage()">
+          <option value="">Tüm Durumlar</option>
+          <option value="Teslim Edildi">Teslim Edildi</option>
+          <option value="Dağıtımda">Dağıtımda</option>
+          <option value="Kargoya Verildi">Kargoya Verildi</option>
+          <option value="Gecikmiş">Gecikmiş</option>
+          <option value="Depoda">Depoda</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Kargo ID</th><th>Sipariş</th><th>Firma</th><th>Takip No</th>
+            <th>Durum</th><th>Son Konum</th><th>Gecikme (gün)</th><th>ETA</th>
+          </tr>
+        </thead>
+        <tbody id="shipmentsTable"><tr><td colspan="8" class="empty">Yükleniyor…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════ PAGE: ÜRÜNLER ════════ -->
+  <!-- GET /api/products -->
+  <div class="page" id="page-products">
+    <div class="shdr">
+      <div class="stitle">🗃️ Ürünler <span class="scnt" id="prod-count">—</span></div>
+      <div class="filter-bar">
+        <select id="prod-filter" onchange="renderProductsPage()">
+          <option value="">Tümü</option>
+          <option value="kritik">Kritik Stok</option>
+          <option value="normal">Normal Stok</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Ürün ID</th><th>Ürün Adı</th><th>Fiyat</th>
+            <th>Stok</th><th>Min Eşik</th><th>Stok Durumu</th><th>Müsait</th><th>Tedarikçi</th><th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="productsTable"><tr><td colspan="9" class="empty">Yükleniyor…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════ PAGE: GÖREVLER ════════ -->
+  <!-- GET /api/tasks -->
+  <div class="page" id="page-tasks">
+    <div class="shdr">
+      <div class="stitle">📋 Görevler <span class="scnt" id="task-count">—</span></div>
+      <div class="filter-bar">
+        <select id="task-filter-status" onchange="renderTasksPage()">
+          <option value="">Tüm Durumlar</option>
+          <option value="Bekliyor">Bekliyor</option>
+          <option value="Devam Ediyor">Devam Ediyor</option>
+          <option value="Onay bekliyor">Onay bekliyor</option>
+          <option value="Tamamlandı">Tamamlandı</option>
+        </select>
+        <select id="task-filter-type" onchange="renderTasksPage()">
+          <option value="">Tüm Türler</option>
+          <option value="Müşteri Bilgilendirme">Müşteri Bilgilendirme</option>
+          <option value="Paketleme">Paketleme</option>
+          <option value="Stok">Stok</option>
+          <option value="Kargo">Kargo</option>
+        </select>
+        <select id="task-filter-pri" onchange="renderTasksPage()">
+          <option value="">Tüm Öncelikler</option>
+          <option value="Kritik">Kritik</option>
+          <option value="Yüksek">Yüksek</option>
+          <option value="Orta">Orta</option>
+          <option value="Düşük">Düşük</option>
+        </select>
+      </div>
+    </div>
+    <div class="table-panel">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th><th>Görev</th><th>Tür</th><th>İlişki</th>
+            <th>Öncelik</th><th>Durum</th><th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="tasksTable"><tr><td colspan="7" class="empty">Yükleniyor…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════ PAGE: ONAY BEKLEYENLERİ ════════ -->
+  <div class="page" id="page-pending">
+    <div class="shdr">
+      <div class="stitle">⏳ Onay Bekleyen Aksiyonlar <span class="scnt" id="pend-page-count">—</span></div>
+      <button class="btn btn-primary btn-sm" onclick="approveAll()">✅ Tümünü Onayla</button>
+    </div>
+    <div class="action-panel" id="pendPagePanel"><div class="empty">Yükleniyor…</div></div>
+  </div>
+
+  <!-- ════════ PAGE: CHAT (placeholder) ════════ -->
+  <div class="page" id="page-chat">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;color:var(--muted)">
+      <div style="font-size:40px">💬</div>
+      <div style="font-size:15px;font-weight:600;color:var(--text)">Müşteri Chat Arayüzü</div>
+      <div style="font-size:13px">Bu sekme <code style="font-family:var(--mono);background:var(--border);padding:2px 6px;border-radius:4px">frontend/chat.html</code> dosyasına yönlendirir.</div>
+      <a href="chat.html" class="btn btn-primary">💬 Chat'e Git →</a>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══════ MAİL MODAL ══════ -->
+<div class="overlay" id="mailModal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mailTitle">
+    <div class="mhdr">
+      <div class="mtitle" id="mailTitle">✉️ Tedarikçi Mail Taslağı <span class="chip chip-purple" style="margin-left:6px">draft_supplier_email</span></div>
+      <button class="mclose" aria-label="Mail taslağını kapat" onclick="closeMailModal()">×</button>
+    </div>
+    <div class="mbody">
+      <div class="field"><label>Ürün / Konu</label><div id="mailProd" style="font-size:12px;color:var(--muted);font-family:var(--mono);margin-bottom:4px">—</div></div>
+      <div class="field"><label>Alıcı (supplier_email)</label><input id="mailTo" type="email" value="tedarikci@example.com"/></div>
+      <div class="field"><label>CC</label><input id="mailCc" type="email" value="satin.alma@smartflow.com"/></div>
+      <div class="field"><label>Konu</label><input id="mailSubj" type="text" value="ACİL: Kritik Stok Uyarısı — Acil Temin Talebi"/></div>
+      <div class="field"><label>Mesaj</label>
+        <textarea id="mailBody">Sayın Tedarikçi Yetkilisi,
+
+Sistemimizde kritik stok seviyesine düşen ürünler tespit edilmiştir.
+
+KRİTİK STOK KALEMLERİ:
+[Ürün listesi otomatik dolduruluyor…]
+
+Talebimizin 48 saat içinde karşılanması büyük önem arz etmektedir.
+Lütfen stok durumunuzu ve teslimat tarihinizi bildirin.
+
+Saygılarımla,
+Satın Alma Departmanı — SmartFlow AI</textarea>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="btn btn-ghost" onclick="closeMailModal()">İptal</button>
+      <button class="btn btn-ghost" onclick="copyMailDraft()">📋 Kopyala</button>
+      <button class="btn btn-primary" onclick="sendMail()">Taslağı Hazırla</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap" role="status" aria-live="polite" aria-relevant="additions text"></div>
+
+<script>
+/* ════════════════════════════════
+   MOCK DATA
+════════════════════════════════ */
+const MOCK = {
+  summary:{
+    total_orders:12, preparing_orders:5, in_cargo_orders:4,
+    delivered_orders:2, delayed_orders:1, critical_stock_products:2, pending_tasks:3,
+    ai_summary:"Bugün 12 sipariş var. 5 sipariş hazırlanmalı, 1 kargo gecikmiş, 2 ürün kritik stokta. #142 müşterisi acil bilgilendirilmeli."
+  },
+  generate:{
+    ai_summary:"Bugünkü Operasyon Özeti:\n\n• Toplam 12 aktif sipariş mevcut.\n• 5 sipariş hazırlanmayı bekliyor.\n• 4 sipariş kargoda, 1 tanesinde gecikme riski var.\n• 2 ürün kritik stok seviyesinde — tedarikçi bildirimi gerekiyor.\n• 3 görev yönetici onayı bekliyor.\n\nÖncelikli aksiyonlar:\n1. #142 müşterisini bilgilendir.\n2. #128 ve #134 siparişlerini paketle.\n3. Organik Zeytinyağı tedarik taslağını onayla.",
+    tool_calls:["get_order_status","check_stock_alerts","generate_daily_briefing"]
+  },
+  tasks:[
+    {task_id:1,task_type:"Müşteri Bilgilendirme",description:"#142 gecikmiş siparişin müşterisini bilgilendir",priority:"Yüksek",status:"Bekliyor",related_order_id:142,related_product_id:null},
+    {task_id:2,task_type:"Paketleme",description:"#128 numaralı siparişi paketle",priority:"Orta",status:"Bekliyor",related_order_id:128,related_product_id:null},
+    {task_id:3,task_type:"Paketleme",description:"#134 numaralı siparişi paketle",priority:"Orta",status:"Devam Ediyor",related_order_id:134,related_product_id:null},
+    {task_id:4,task_type:"Stok",description:"Organik Zeytinyağı tedarikçi mail taslağını onayla",priority:"Yüksek",status:"Onay Bekliyor",related_order_id:null,related_product_id:"P002"},
+    {task_id:5,task_type:"Kargo",description:"Kargo gecikmesi bildirimi gönder — #142",priority:"Yüksek",status:"Onay Bekliyor",related_order_id:142,related_product_id:null},
+    {task_id:6,task_type:"Stok",description:"O-Ring Seti acil temin — kritik eşik aşıldı",priority:"Kritik",status:"Onay Bekliyor",related_order_id:null,related_product_id:"P008"},
+    {task_id:7,task_type:"Paketleme",description:"#121 numaralı siparişi kargoya ver",priority:"Düşük",status:"Tamamlandı",related_order_id:121,related_product_id:null},
+  ],
+  orders:[
+    {order_id:142,customer_name:"Arya Ltd.",customer_phone:"05301112233",product_id:"P001",quantity:3,status:"Kargoda",cargo_status:"Gecikmiş",estimated_delivery:"Yarın",delay_days:2,created_at:"2025-05-08"},
+    {order_id:138,customer_name:"Boreas AŞ",customer_phone:"05302223344",product_id:"P002",quantity:10,status:"Hazırlanıyor",cargo_status:"Bekliyor",estimated_delivery:"13 May",delay_days:5,created_at:"2025-05-07"},
+    {order_id:134,customer_name:"Cyan Grup",customer_phone:"05303334455",product_id:"P003",quantity:2,status:"Hazırlanıyor",cargo_status:"Zamanında",estimated_delivery:"12 May",delay_days:0,created_at:"2025-05-06"},
+    {order_id:128,customer_name:"Deniz Tic.",customer_phone:"05304445566",product_id:"P005",quantity:5,status:"Hazırlanıyor",cargo_status:"Zamanında",estimated_delivery:"11 May",delay_days:0,created_at:"2025-05-05"},
+    {order_id:121,customer_name:"Ekol Ltd.",customer_phone:"05305556677",product_id:"P008",quantity:1,status:"Teslim Edildi",cargo_status:"Zamanında",estimated_delivery:"10 May",delay_days:0,created_at:"2025-05-04"},
+    {order_id:115,customer_name:"Fiona AŞ",customer_phone:"05306667788",product_id:"P011",quantity:8,status:"Teslim Edildi",cargo_status:"Zamanında",estimated_delivery:"09 May",delay_days:0,created_at:"2025-05-03"},
+  ],
+  products:[
+    {product_id:"P001",product_name:"Lavanta Sabunu",stock_count:74,critical_threshold:20,supplier_email:"sabun@tedarik.com",price:24.90,available:true},
+    {product_id:"P002",product_name:"Organik Zeytinyağı",stock_count:4,critical_threshold:5,supplier_email:"zeytin@tedarik.com",price:89.90,available:true},
+    {product_id:"P003",product_name:"Bal (500g)",stock_count:38,critical_threshold:15,supplier_email:"bal@tedarik.com",price:145.00,available:true},
+    {product_id:"P005",product_name:"Kuru Kayısı (1kg)",stock_count:52,critical_threshold:25,supplier_email:"kuru@tedarik.com",price:67.50,available:true},
+    {product_id:"P008",product_name:"O-Ring Seti",stock_count:3,critical_threshold:60,supplier_email:"oring@tedarik.com",price:12.50,available:true},
+    {product_id:"P011",product_name:"Alüminyum Profil 40×40",stock_count:12,critical_threshold:100,supplier_email:"metal@tedarik.com",price:245.00,available:true},
+    {product_id:"P015",product_name:"Plastik Conta Set",stock_count:5,critical_threshold:50,supplier_email:"conta@tedarik.com",price:34.00,available:true},
+    {product_id:"P019",product_name:"Rulman 6205",stock_count:18,critical_threshold:120,supplier_email:"rulman@tedarik.com",price:67.00,available:false},
+  ],
+  shipments:[
+    {shipment_id:1,order_id:142,carrier:"Aras Kargo",tracking_number:"TR-8841293",actual_status:"Gecikmiş",last_location:"Ankara Aktarma",delay_days:2,estimated_delivery:"Yarın"},
+    {shipment_id:2,order_id:128,carrier:"MNG Kargo",tracking_number:"TR-8831102",actual_status:"Dağıtımda",last_location:"İst. Dağıtım",delay_days:0,estimated_delivery:"Bugün"},
+    {shipment_id:3,order_id:134,carrier:"Yurtiçi",tracking_number:"TR-8820044",actual_status:"Kargoya Verildi",last_location:"İzmir Şubesi",delay_days:0,estimated_delivery:"12 May"},
+    {shipment_id:4,order_id:121,carrier:"PTT Kargo",tracking_number:"TR-8812991",actual_status:"Teslim Edildi",last_location:"—",delay_days:0,estimated_delivery:"10 May"},
+    {shipment_id:5,order_id:115,carrier:"Aras Kargo",tracking_number:"TR-8801377",actual_status:"Teslim Edildi",last_location:"—",delay_days:0,estimated_delivery:"09 May"},
+  ]
+};
+
+/* ════════ STATE ════════ */
+let ST = {summary:null,tasks:[],orders:[],products:[],shipments:[]};
+let chartInst = null;
+let currentPage = 'dashboard';
+const isPendingApproval = (task) => (task.status || '').toLocaleLowerCase('tr') === 'onay bekliyor';
+const shipmentForOrder = (orderId) => ST.shipments.find(s => s.order_id === orderId) || {};
+
+/* ════════ API HELPER ════════ */
+async function apiFetch(method,url,body){
+  try{
+    const o={method,headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(5000)};
+    if(body) o.body=JSON.stringify(body);
+    const r=await fetch(url,o);
+    if(!r.ok) throw new Error();
+    return await r.json();
+  }catch{return null;}
+}
+
+/* ════════ NAVIGATION ════════ */
+const PAGE_TITLES = {
+  dashboard:'Genel Bakış', orders:'Siparişler', shipments:'Kargolar',
+  products:'Ürünler', tasks:'Görevler', pending:'Onay Bekleyenler', chat:'Müşteri Chat'
+};
+
+function goPage(name){
+  // hide all pages
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+
+  // show target
+  const pg = document.getElementById('page-'+name);
+  if(pg) pg.classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-page="${name}"]`);
+  if(nav) nav.classList.add('active');
+
+  document.getElementById('topTitle').textContent = PAGE_TITLES[name] || name;
+  currentPage = name;
+
+  // render page-specific content
+  if(name==='orders')   renderOrdersPage();
+  if(name==='shipments')renderShipmentsPage();
+  if(name==='products') renderProductsPage();
+  if(name==='tasks')    renderTasksPage();
+  if(name==='pending')  renderPendingPage();
+}
+
+// wire nav clicks
+document.querySelectorAll('.nav-item[data-page]').forEach(el=>{
+  el.addEventListener('click',()=>goPage(el.dataset.page));
+});
+
+/* ════════ LOAD ALL ════════ */
+async function loadAll(){
+  const [summary,tasks,orders,products,shipments] = await Promise.all([
+    apiFetch('GET','/api/dashboard/summary'),
+    apiFetch('GET','/api/tasks'),
+    apiFetch('GET','/api/orders'),
+    apiFetch('GET','/api/products'),
+    apiFetch('GET','/api/shipments'),
+  ]);
+  ST.summary   = summary   || MOCK.summary;
+  ST.tasks     = tasks     || MOCK.tasks;
+  ST.orders    = orders    || MOCK.orders;
+  ST.products  = products  || MOCK.products;
+  ST.shipments = shipments || MOCK.shipments;
+
+  renderSummary();
+  renderDashboardWidgets();
+  updateNavBadges();
+
+  // re-render active page if not dashboard
+  if(currentPage!=='dashboard') goPage(currentPage);
+}
+
+/* ════════ DASHBOARD: SUMMARY ════════ */
+function renderSummary(){
+  const s = ST.summary;
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('s-total',s.total_orders.toLocaleString('tr'));
+  set('s-prep',s.preparing_orders);
+  set('s-ship',s.in_cargo_orders);
+  set('s-del',s.delivered_orders.toLocaleString('tr'));
+  set('s-late',s.delayed_orders);
+  set('s-crit',s.critical_stock_products);
+  const pend=ST.tasks.filter(isPendingApproval).length;
+  set('s-pend',pend);
+  set('sd-total',`${s.total_orders} sipariş`);
+  set('sd-prep',`${s.preparing_orders} aktif`);
+  set('sd-ship',`${s.in_cargo_orders} yolda`);
+  set('sd-del',`+${Math.max(0,s.delivered_orders-8)} dün`);
+  set('sd-late',s.delayed_orders>0?'↑ acil':'normal');
+  set('sd-crit',s.critical_stock_products>0?'↑ eşik':'normal');
+  set('sd-pend',pend>0?'onay gerek':'temiz');
+}
+
+/* ════════ DASHBOARD WIDGETS ════════ */
+function renderDashboardWidgets(){
+  // Late orders widget
+  const late = ST.orders.filter(o=>o.cargo_status==='Gecikmiş');
+  document.getElementById('lateCount').textContent = late.length;
+  const lp = document.getElementById('latePanel');
+  lp.innerHTML = !late.length
+    ? '<div class="empty">✅ Gecikmiş sipariş yok</div>'
+    : late.map(o=>{
+        const shipment = shipmentForOrder(o.order_id);
+        return `
+        <div class="ai-row">
+          <span class="ai-ic">🔴</span>
+          <div class="ai-bd">
+            <div class="ai-t">#${o.order_id} — ${o.customer_name}</div>
+            <div class="ai-m">Adet: ${o.quantity} · ETA: ${shipment.estimated_delivery || o.estimated_delivery} · <span style="color:var(--red)">${shipment.delay_days || 0} gün gecikmiş</span></div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="badge b-red"><span class="bd"></span>Gecikmiş</span>
+            <button class="btn btn-ghost btn-sm" onclick="pushDashNote('📦 #${o.order_id} — ${o.customer_name} için bilgilendirme aksiyonu oluşturuldu')">Aksiyon</button>
+          </div>
+        </div>`;
+      }).join('');
+
+  // Critical stock widget
+  const crit = ST.products.filter(p=>p.stock_count<=p.critical_threshold);
+  document.getElementById('critCount').textContent = crit.length;
+  const cp = document.getElementById('critPanel');
+  cp.innerHTML = !crit.length
+    ? '<div class="empty">✅ Kritik stok yok</div>'
+    : crit.map(p=>{
+        const pct=Math.round(p.stock_count/p.critical_threshold*100);
+        const col=pct<10?'var(--red)':pct<20?'var(--orange)':'var(--yellow)';
+        return `
+          <div class="ai-row">
+            <span class="ai-ic">⚡</span>
+            <div class="ai-bd">
+              <div class="ai-t">${p.product_name}</div>
+              <div class="ai-m">${p.product_id} · Stok: <span style="color:${col}">${p.stock_count}</span> / Min: ${p.critical_threshold}</div>
+              <div class="sbw"><div class="sb"><div class="sbf" style="width:${pct}%;background:${col}"></div></div><span class="sbp">%${pct}</span></div>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="openMailFor('${p.product_id}','${p.product_name}','${p.supplier_email}',${p.stock_count},${p.critical_threshold})">✉️</button>
+          </div>`;
+      }).join('');
+
+  // Pending widget
+  renderPendingWidgets();
+
+  // Shipment mini table
+  const sm = document.getElementById('shipMini');
+  const sMap={'Teslim Edildi':'b-green','Dağıtımda':'b-blue','Kargoya Verildi':'b-cyan','Depoda':'b-yellow','Gecikmiş':'b-red'};
+  sm.innerHTML = ST.shipments.slice(0,5).map(s=>`
+    <tr>
+      <td class="cm">${s.tracking_number}</td>
+      <td class="cb">#${s.order_id}</td>
+      <td class="cm">${s.carrier}</td>
+      <td><span class="badge ${sMap[s.actual_status]||'b-gray'}"><span class="bd"></span>${s.actual_status}</span></td>
+      <td class="cm">${s.estimated_delivery}</td>
+    </tr>`).join('');
+
+  renderChart();
+}
+
+/* ════════ PENDING WIDGETS ════════ */
+function renderPendingWidgets(){
+  const pend = ST.tasks.filter(isPendingApproval);
+  const cnt = pend.length;
+  document.getElementById('pendCount').textContent = cnt;
+  document.getElementById('s-pend').textContent = cnt;
+
+  const typeIc={'Stok':'⚡','Kargo':'🚚','Müşteri Bilgilendirme':'📣','Paketleme':'📦'};
+  const priCls={'Kritik':'pri-K','Yüksek':'pri-Y','Orta':'pri-O','Düşük':'pri-D'};
+  const html = !pend.length
+    ? '<div class="empty">✅ Onay bekleyen aksiyon yok</div>'
+    : pend.map(t=>`
+        <div class="act">
+          <span style="font-size:18px">${typeIc[t.task_type]||'📋'}</span>
+          <div class="act-l">
+            <div class="act-t">${t.description}</div>
+            <div class="act-s">${t.task_type} · <span class="badge b-purple" style="display:inline-flex"><span class="bd"></span>Onay Bekliyor</span></div>
+          </div>
+          <div class="act-r">
+            <span class="pri ${priCls[t.priority]||'pri-D'}">${t.priority}</span>
+            <button class="btn btn-ghost btn-sm" onclick="rejectTask(${t.task_id})">✕</button>
+            <button class="btn btn-purple btn-sm" onclick="approveTask(${t.task_id})">✓ Onayla</button>
+          </div>
+        </div>`).join('');
+  document.getElementById('pendPanel').innerHTML = html;
+}
+
+/* ════════ CHART ════════ */
+function renderChart(){
+  const ctx=document.getElementById('orderChart').getContext('2d');
+  const s=ST.summary;
+  if(chartInst) chartInst.destroy();
+  chartInst=new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels:['Teslim','Kargoda','Hazırlanıyor','Gecikmiş'],
+      datasets:[{
+        data:[s.delivered_orders,s.in_cargo_orders,s.preparing_orders,s.delayed_orders],
+        backgroundColor:['#22c55e22','#3b82f622','#eab30822','#ef444422'],
+        borderColor:['#22c55e','#3b82f6','#eab308','#ef4444'],
+        borderWidth:1.5,hoverOffset:5
+      }]
+    },
+    options:{
+      responsive:true,cutout:'68%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#64748b',font:{family:"'IBM Plex Mono',monospace",size:10},padding:14,boxWidth:10,boxHeight:10}},
+        tooltip:{backgroundColor:'#13161d',borderColor:'#1f2330',borderWidth:1,titleColor:'#e2e8f0',bodyColor:'#94a3b8',
+          titleFont:{family:"'IBM Plex Mono',monospace",size:11},bodyFont:{family:"'IBM Plex Mono',monospace",size:11}}
+      }
+    }
+  });
+}
+
+/* ════════ PAGE: SİPARİŞLER ════════ */
+function renderOrdersPage(){
+  const fs = document.getElementById('ord-filter-status').value;
+  const fc = document.getElementById('ord-filter-cargo').value;
+  let rows = ST.orders.filter(o=>(!fs||o.status===fs)&&(!fc||o.cargo_status===fc));
+  document.getElementById('ord-count').textContent = rows.length;
+
+  const cMap={'Hazırlanıyor':'b-yellow','Kargoda':'b-blue','Teslim Edildi':'b-green'};
+  const ccMap={'Gecikmiş':'b-red','Zamanında':'b-green','Dağıtımda':'b-blue','Bekliyor':'b-gray'};
+
+  const tb = document.getElementById('ordersTable');
+  tb.innerHTML = !rows.length
+    ? `<tr><td colspan="9" class="empty">Sonuç yok.</td></tr>`
+    : rows.map(o=>`
+        <tr>
+          <td class="cm">#${o.order_id}</td>
+          <td class="cb">${o.customer_name}</td>
+          <td class="cm">${o.product_id}</td>
+          <td class="cm">${o.quantity}</td>
+          <td><span class="badge ${cMap[o.status]||'b-gray'}"><span class="bd"></span>${o.status}</span></td>
+          <td><span class="badge ${ccMap[o.cargo_status]||'b-gray'}"><span class="bd"></span>${o.cargo_status}</span></td>
+          <td class="cm">${o.estimated_delivery}</td>
+          <td>${o.delay_days>0?`<span style="color:var(--red);font-family:var(--mono);font-size:11px">+${o.delay_days}g</span>`:`<span style="color:var(--muted)">—</span>`}</td>
+          <td class="cm">${o.created_at||'—'}</td>
+        </tr>`).join('');
+}
+
+/* ════════ PAGE: KARGOLAR ════════ */
+function renderShipmentsPage(){
+  const f = document.getElementById('ship-filter').value;
+  let rows = ST.shipments.filter(s=>!f||s.actual_status===f);
+  document.getElementById('ship-count').textContent = rows.length;
+
+  const sMap={'Teslim Edildi':'b-green','Dağıtımda':'b-blue','Kargoya Verildi':'b-cyan','Depoda':'b-yellow','Gecikmiş':'b-red'};
+  const tb = document.getElementById('shipmentsTable');
+  tb.innerHTML = !rows.length
+    ? `<tr><td colspan="8" class="empty">Sonuç yok.</td></tr>`
+    : rows.map(s=>`
+        <tr>
+          <td class="cm">#${s.shipment_id}</td>
+          <td class="cm">#${s.order_id}</td>
+          <td class="cm">${s.carrier}</td>
+          <td class="cm">${s.tracking_number}</td>
+          <td><span class="badge ${sMap[s.actual_status]||'b-gray'}"><span class="bd"></span>${s.actual_status}</span></td>
+          <td class="cm">${s.last_location}</td>
+          <td>${s.delay_days>0?`<span style="color:var(--red);font-family:var(--mono);font-size:11px">+${s.delay_days}</span>`:`<span style="color:var(--muted)">—</span>`}</td>
+          <td class="cm">${s.estimated_delivery}</td>
+        </tr>`).join('');
+}
+
+/* ════════ PAGE: ÜRÜNLER ════════ */
+function renderProductsPage(){
+  const f = document.getElementById('prod-filter').value;
+  let rows = ST.products.filter(p=>{
+    if(f==='kritik') return p.stock_count<=p.critical_threshold;
+    if(f==='normal') return p.stock_count>p.critical_threshold;
+    return true;
+  });
+  document.getElementById('prod-count').textContent = rows.length;
+  const tb = document.getElementById('productsTable');
+  tb.innerHTML = !rows.length
+    ? `<tr><td colspan="9" class="empty">Sonuç yok.</td></tr>`
+    : rows.map(p=>{
+        const pct=Math.round(p.stock_count/p.critical_threshold*100);
+        const isCrit=p.stock_count<=p.critical_threshold;
+        const col=pct<10?'var(--red)':pct<20?'var(--orange)':pct<50?'var(--yellow)':'var(--green)';
+        return `
+          <tr>
+            <td class="cm">${p.product_id}</td>
+            <td class="cb">${p.product_name}</td>
+            <td class="cm">₺${p.price}</td>
+            <td><span style="font-family:var(--mono);font-size:12px;color:${col};font-weight:600">${p.stock_count}</span></td>
+            <td class="cm">${p.critical_threshold}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;min-width:100px">
+                <div class="sb" style="flex:1"><div class="sbf" style="width:${Math.min(pct,100)}%;background:${col}"></div></div>
+                <span class="sbp">%${pct}</span>
+              </div>
+            </td>
+            <td><span class="badge ${p.available?'b-green':'b-red'}"><span class="bd"></span>${p.available?'Var':'Yok'}</span></td>
+            <td class="cm" style="font-size:10px">${p.supplier_email}</td>
+            <td>
+              ${isCrit?`<button class="btn btn-orange btn-sm" onclick="openMailFor('${p.product_id}','${p.product_name}','${p.supplier_email}',${p.stock_count},${p.critical_threshold})" style="background:rgba(249,115,22,.12);color:var(--orange);border:1px solid rgba(249,115,22,.25);display:inline-flex;align-items:center;gap:4px;padding:4px 9px;border-radius:5px;font-size:11px;cursor:pointer">⚡ Mail</button>`
+              :`<button class="btn btn-ghost btn-sm" onclick="openMailFor('${p.product_id}','${p.product_name}','${p.supplier_email}',${p.stock_count},${p.critical_threshold})">✉️</button>`}
+            </td>
+          </tr>`;
+      }).join('');
+}
+
+/* ════════ PAGE: GÖREVLER ════════ */
+function renderTasksPage(){
+  const fs = document.getElementById('task-filter-status').value;
+  const ft = document.getElementById('task-filter-type').value;
+  const fp = document.getElementById('task-filter-pri').value;
+  let rows = ST.tasks.filter(t=>(!fs||(t.status || '').toLocaleLowerCase('tr')===fs.toLocaleLowerCase('tr'))&&(!ft||t.task_type===ft)&&(!fp||t.priority===fp));
+  document.getElementById('task-count').textContent = rows.length;
+
+  const priCls={'Kritik':'pri-K','Yüksek':'pri-Y','Orta':'pri-O','Düşük':'pri-D'};
+  const sCls={'Devam Ediyor':'b-blue','Bekliyor':'b-yellow','Onay Bekliyor':'b-purple','Onay bekliyor':'b-purple','Tamamlandı':'b-green','İptal':'b-gray'};
+  const tCls={'Müşteri Bilgilendirme':'b-red','Paketleme':'b-cyan','Stok':'b-orange','Kargo':'b-blue'};
+
+  const tb = document.getElementById('tasksTable');
+  tb.innerHTML = !rows.length
+    ? `<tr><td colspan="7" class="empty">Sonuç yok.</td></tr>`
+    : rows.map(t=>`
+        <tr>
+          <td class="cm">#${t.task_id}</td>
+          <td class="cb">${t.description}</td>
+          <td><span class="badge ${tCls[t.task_type]||'b-gray'}"><span class="bd"></span>${t.task_type}</span></td>
+          <td class="cm">${t.related_order_id?'#Sip-'+t.related_order_id:t.related_product_id||'—'}</td>
+          <td><span class="pri ${priCls[t.priority]||'pri-D'}">${t.priority}</span></td>
+          <td><span class="badge ${sCls[t.status]||'b-gray'}"><span class="bd"></span>${t.status}</span></td>
+          <td>
+            ${isPendingApproval(t)
+              ?`<button class="btn btn-purple btn-sm" onclick="approveTask(${t.task_id})">✓ Onayla</button>`
+              :`<button class="btn btn-ghost btn-sm" onclick="showToast('Görev #${t.task_id} detayı','info')">→</button>`}
+          </td>
+        </tr>`).join('');
+}
+
+/* ════════ PAGE: PENDING ════════ */
+function renderPendingPage(){
+  const pend = ST.tasks.filter(isPendingApproval);
+  document.getElementById('pend-page-count').textContent = pend.length;
+  const typeIc={'Stok':'⚡','Kargo':'🚚','Müşteri Bilgilendirme':'📣','Paketleme':'📦'};
+  const priCls={'Kritik':'pri-K','Yüksek':'pri-Y','Orta':'pri-O','Düşük':'pri-D'};
+  document.getElementById('pendPagePanel').innerHTML = !pend.length
+    ? '<div class="empty">✅ Onay bekleyen aksiyon yok</div>'
+    : pend.map(t=>`
+        <div class="act">
+          <span style="font-size:18px">${typeIc[t.task_type]||'📋'}</span>
+          <div class="act-l">
+            <div class="act-t">${t.description}</div>
+            <div class="act-s">${t.task_type} · <span class="badge b-purple" style="display:inline-flex"><span class="bd"></span>Onay Bekliyor</span></div>
+          </div>
+          <div class="act-r">
+            <span class="pri ${priCls[t.priority]||'pri-D'}">${t.priority}</span>
+            <button class="btn btn-ghost btn-sm" onclick="rejectTask(${t.task_id})">✕ Reddet</button>
+            <button class="btn btn-purple btn-sm" onclick="approveTask(${t.task_id})">✓ Onayla</button>
+          </div>
+        </div>`).join('');
+}
+
+/* ════════ TASK ACTIONS ════════ */
+function approveTask(id){
+  const t=ST.tasks.find(x=>x.task_id===id);
+  if(!t) return;
+  t.status='Tamamlandı';
+  ST.summary.pending_tasks=Math.max(0,ST.summary.pending_tasks-1);
+  renderSummary();
+  renderPendingWidgets();
+  if(currentPage==='tasks')   renderTasksPage();
+  if(currentPage==='pending') renderPendingPage();
+  updateNavBadges();
+  showToast(`✅ Görev #${id} onaylandı`,'success');
+  pushDashNote(`✅ Görev #${id} onaylandı: "${t.description}"`);
+}
+
+function rejectTask(id){
+  const t=ST.tasks.find(x=>x.task_id===id);
+  if(!t) return;
+  t.status='İptal';
+  ST.summary.pending_tasks=Math.max(0,ST.summary.pending_tasks-1);
+  renderSummary();
+  renderPendingWidgets();
+  if(currentPage==='tasks')   renderTasksPage();
+  if(currentPage==='pending') renderPendingPage();
+  updateNavBadges();
+  showToast(`✕ Görev #${id} reddedildi`,'warn');
+}
+
+function approveAll(){
+  const pending=ST.tasks.filter(isPendingApproval);
+  if(!pending.length) return;
+  const preview=pending.slice(0,3).map(t=>`#${t.task_id} ${t.description}`).join('\n');
+  if(!confirm(`${pending.length} bekleyen aksiyon tamamlandı yapılacak.\n\n${preview}\n\nDevam edilsin mi?`)) return;
+  pending.forEach(t=>t.status='Tamamlandı');
+  ST.summary.pending_tasks=0;
+  renderSummary();
+  renderPendingWidgets();
+  if(currentPage==='tasks')   renderTasksPage();
+  if(currentPage==='pending') renderPendingPage();
+  updateNavBadges();
+  showToast('✅ Tüm aksiyonlar onaylandı','success');
+  pushDashNote('✅ Tüm bekleyen aksiyonlar onaylandı.');
+}
+
+/* ════════ NAV BADGES ════════ */
+function updateNavBadges(){
+  const late=ST.orders.filter(o=>o.cargo_status==='Gecikmiş').length;
+  const crit=ST.products.filter(p=>p.stock_count<=p.critical_threshold).length;
+  const pend=ST.tasks.filter(isPendingApproval).length;
+  document.getElementById('nb-late').textContent=late;
+  document.getElementById('nb-crit').textContent=crit;
+  document.getElementById('nb-pend').textContent=pend;
+}
+
+/* ════════ AI BRIEFING — POST /api/tasks/generate ════════ */
+async function loadBriefing(manual=false){
+  const btn=document.getElementById('briefBtn');
+  btn.disabled=true; btn.textContent='…';
+  const el=document.getElementById('briefBody');
+  el.className='brief-body loading';
+  el.innerHTML='<div class="spinner"></div><span>POST /api/tasks/generate çağrılıyor…</span>';
+  document.getElementById('briefFtr').style.display='none';
+
+  const data=await apiFetch('POST','/api/tasks/generate',{});
+  const txt  = data ? (data.ai_summary || data.briefing) : (ST.summary?.ai_summary || MOCK.generate.ai_summary);
+  const tools= (data&&data.tool_calls) ? data.tool_calls : MOCK.generate.tool_calls;
+
+  el.className='brief-body';
+  el.innerHTML=txt.replace(/\n/g,'<br>');
+  document.getElementById('briefFtr').style.display='flex';
+  document.getElementById('briefMeta').textContent=`Son güncelleme: ${new Date().toLocaleTimeString('tr')} · POST /api/tasks/generate`;
+  document.getElementById('briefTools').innerHTML=tools.map(t=>`<span class="chip chip-purple">${t}</span>`).join('');
+
+  if(manual) showToast(data?'✅ Brifing güncellendi':'ℹ️ API yok — fallback gösteriliyor', data?'success':'info');
+  btn.disabled=false; btn.textContent='↻ Yenile';
+}
+
+/* ════════ DASHBOARD NOTE ════════ */
+function pushDashNote(msg){
+  const w=document.getElementById('dashNotes');
+  const d=document.createElement('div');
+  const id='dn-'+Date.now();
+  d.className='dnote'; d.id=id;
+  d.innerHTML=`<span>🔔</span><span>${msg}</span><span class="dnote-close" onclick="document.getElementById('${id}').remove()">×</span>`;
+  w.prepend(d);
+}
+window.pushDashNote=pushDashNote;
+
+/* ════════ MANAGER ALERT — POST /api/alerts/send ════════ */
+async function sendManagerAlert(e){
+  const btn=e.currentTarget; btn.disabled=true;
+  showToast('Yönetici uyarısı gönderiliyor','info');
+  const delayed = ST.orders.filter(o=>o.cargo_status==='Gecikmiş').length;
+  const critical = ST.products.filter(p=>p.stock_count<=p.critical_threshold).length;
+  const pending = ST.tasks.filter(isPendingApproval).length;
+  const res=await apiFetch('POST','/api/alerts/send',{
+    subject:'SmartFlow AI — Yönetici Uyarısı',
+    body:`Acil durum bildirimi:\n- Gecikmiş sipariş: ${delayed}\n- Kritik stok: ${critical}\n- Onay bekleyen: ${pending}`
+  });
+  setTimeout(()=>{
+    if(res){
+      showToast('Yönetici uyarısı gönderildi - Resend API','success');
+      pushDashNote('Yönetici uyarısı gönderildi - POST /api/alerts/send');
+    }else{
+      showToast('Yönetici uyarısı gerçek servise ulaşamadı. Demo/fallback modunu kontrol edin.','warn');
+      pushDashNote('Yönetici uyarısı gönderilemedi - servis bağlantısı kontrol edilmeli');
+    }
+  },res?0:600);
+  btn.disabled=false;
+}
+
+/* ════════ MAIL MODAL ════════ */
+function openMailModal(){
+  const crit=ST.products.filter(p=>p.stock_count<=p.critical_threshold);
+  const items=crit.map(p=>`  • ${p.product_name} (${p.product_id}) — Stok: ${p.stock_count}/${p.critical_threshold}`).join('\n');
+  document.getElementById('mailProd').textContent=crit.map(p=>p.product_name).join(', ')||'—';
+  if(crit.length) document.getElementById('mailTo').value=crit[0].supplier_email;
+  document.getElementById('mailBody').value=
+    `Sayın Tedarikçi Yetkilisi,\n\nSistemimizde kritik stok seviyesine düşen ürünler tespit edilmiştir.\n\nKRİTİK STOK KALEMLERİ:\n${items||'  (ürün yok)'}\n\nTalebimizin 48 saat içinde karşılanması büyük önem arz etmektedir.\n\nSaygılarımla,\nSatın Alma — SmartFlow AI`;
+  document.getElementById('mailModal').classList.add('open');
+}
+function openMailFor(pid,name,email,stock,min){
+  document.getElementById('mailProd').textContent=name;
+  document.getElementById('mailTo').value=email;
+  document.getElementById('mailSubj').value=`ACİL: ${name} — Stok Yenileme Talebi`;
+  document.getElementById('mailBody').value=
+    `Sayın Tedarikçi Yetkilisi,\n\n"${name}" (${pid}) ürünümüzün stoğu kritik seviyeye düşmüştür.\n\nMevcut stok: ${stock} adet\nKritik eşik: ${min} adet\n\nEn kısa sürede fiyat ve teslim süresi bilgisini paylaşabilir misiniz?\n\nSaygılarımla,\nSatın Alma — SmartFlow AI`;
+  document.getElementById('mailModal').classList.add('open');
+}
+function closeMailModal(){document.getElementById('mailModal').classList.remove('open')}
+function mailDraftText(){
+  const to=document.getElementById('mailTo').value;
+  const cc=document.getElementById('mailCc').value;
+  const subject=document.getElementById('mailSubj').value;
+  const body=document.getElementById('mailBody').value;
+  return `To: ${to}\nCC: ${cc||'-'}\nSubject: ${subject}\n\n${body}`;
+}
+function validateMailDraft(){
+  const to=document.getElementById('mailTo').value.trim();
+  const subject=document.getElementById('mailSubj').value.trim();
+  const body=document.getElementById('mailBody').value.trim();
+  const emailLike=/^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if(!to || !emailLike.test(to)){showToast('Geçerli bir alıcı e-postası girin','error');return false;}
+  if(!subject){showToast('Konu zorunlu','error');return false;}
+  if(!body){showToast('Mesaj gövdesi zorunlu','error');return false;}
+  return true;
+}
+async function copyMailDraft(){
+  if(!validateMailDraft()) return;
+  try{
+    await navigator.clipboard.writeText(mailDraftText());
+    showToast('Taslak panoya kopyalandı','success');
+  }catch{
+    showToast('Taslak panoya kopyalanamadı. Tarayıcı iznini kontrol edin.','error');
+  }
+}
+function sendMail(){
+  if(!validateMailDraft()) return;
+  const to=document.getElementById('mailTo').value;
+  closeMailModal();
+  showToast(`Mail taslağı hazırlandı -> ${to}`,'success');
+  pushDashNote(`Tedarikçi mail taslağı hazırlandı -> ${to}`);
+}
+
+/* ════════ TOAST ════════ */
+function showToast(msg,type='info'){
+  const w=document.getElementById('toastWrap');
+  const t=document.createElement('div');
+  const prefix={success:'Başarılı:',warn:'Uyarı:',error:'Hata:',info:'Bilgi:'}[type]||'Bilgi:';
+  t.className=`toast ${type}`;t.setAttribute(type==='error'?'role':'aria-live',type==='error'?'alert':'polite');
+  t.innerHTML=`<span>${msg.startsWith(prefix)?msg:`${prefix} ${msg}`}</span>`;
+  w.appendChild(t);
+  setTimeout(()=>{t.style.cssText='opacity:0;transform:translateX(12px);transition:all .25s';setTimeout(()=>t.remove(),300)},3500);
+}
+
+/* ════════ REFRESH ════════ */
+function refreshAll(){
+  ST={summary:null,tasks:[],orders:[],products:[],shipments:[]};
+  loadAll().then(()=>loadBriefing());
+  showToast('↻ Veriler yenileniyor…','info');
+}
+
+/* ════════ CLOCK + MODAL CLOSE ════════ */
+setInterval(()=>{const e=document.getElementById('clock');if(e)e.textContent=new Date().toLocaleTimeString('tr')},1000);
+document.getElementById('clock').textContent=new Date().toLocaleTimeString('tr');
+document.getElementById('mailModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open')});
+
+/* ════════ INIT ════════ */
+loadAll().then(()=>loadBriefing());
+setInterval(loadAll,120000);
+</script>
+</body>
+</html>

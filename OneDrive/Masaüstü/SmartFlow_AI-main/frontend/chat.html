@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartFlow AI - Müşteri Chat</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+            mono: ['IBM Plex Mono', 'ui-monospace', 'monospace']
+          }
+        }
+      }
+    };
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-100">
+  <main class="mx-auto flex min-h-screen max-w-5xl flex-col px-4 py-6">
+    <header class="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div>
+        <p class="font-mono text-xs uppercase tracking-[0.24em] text-cyan-300">SmartFlow AI</p>
+        <h1 class="text-xl font-semibold">Müşteri Chat Simülasyonu</h1>
+      </div>
+      <div class="flex items-center gap-2 text-xs">
+        <span class="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-cyan-200">Gemini</span>
+        <span class="rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-violet-200">Kullanılan araçlar</span>
+      </div>
+    </header>
+
+    <section class="grid min-h-0 flex-1 gap-4 lg:grid-cols-[1fr_280px]">
+      <div class="flex min-h-[560px] flex-col overflow-hidden rounded-lg border border-slate-800 bg-slate-900">
+        <div id="messages" class="flex-1 space-y-4 overflow-y-auto p-4"></div>
+
+        <div id="typing" class="hidden border-t border-slate-800 px-4 py-3">
+          <div class="flex items-center gap-2 text-sm text-slate-400">
+            <span class="grid h-8 w-8 place-items-center rounded-full bg-cyan-500/20 text-xs font-semibold text-cyan-200">AI</span>
+            <span class="inline-flex gap-1 rounded-2xl bg-slate-800 px-4 py-2">
+              <span class="h-2 w-2 animate-bounce rounded-full bg-cyan-300"></span>
+              <span class="h-2 w-2 animate-bounce rounded-full bg-cyan-300 [animation-delay:120ms]"></span>
+              <span class="h-2 w-2 animate-bounce rounded-full bg-cyan-300 [animation-delay:240ms]"></span>
+            </span>
+          </div>
+        </div>
+
+        <form id="chatForm" class="flex gap-2 border-t border-slate-800 p-3">
+          <input
+            id="messageInput"
+            class="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-3 py-3 text-sm outline-none transition focus:border-cyan-400"
+            placeholder="Sipariş, kargo, stok veya günlük özet sorabilirsiniz..."
+            autocomplete="off"
+          />
+          <button class="rounded-md bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300" type="submit">
+            Gönder
+          </button>
+        </form>
+      </div>
+
+      <aside class="space-y-4">
+        <section class="rounded-lg border border-slate-800 bg-slate-900 p-4">
+          <h2 class="mb-3 text-sm font-semibold">Hızlı Demo</h2>
+          <div id="quickButtons" class="space-y-2"></div>
+        </section>
+
+        <section class="rounded-lg border border-slate-800 bg-slate-900 p-4">
+          <h2 class="mb-3 text-sm font-semibold">Son AI Çıktısı</h2>
+          <div class="space-y-3 text-xs">
+            <div>
+              <p class="mb-1 font-mono uppercase tracking-wider text-slate-500">Intent</p>
+              <span id="intentBadge" class="inline-flex rounded-full bg-slate-800 px-3 py-1 text-slate-300">-</span>
+            </div>
+            <div>
+              <p class="mb-1 font-mono uppercase tracking-wider text-slate-500">Kullanılan Araçlar</p>
+              <div id="toolList" class="flex flex-wrap gap-1"></div>
+            </div>
+            <div>
+              <p class="mb-1 font-mono uppercase tracking-wider text-slate-500">Dashboard Notu</p>
+              <p id="dashboardNote" class="rounded-md bg-slate-950 p-3 text-slate-400">-</p>
+            </div>
+          </div>
+        </section>
+      </aside>
+    </section>
+  </main>
+
+  <template id="messageTemplate">
+    <div class="flex gap-3">
+      <div class="avatar grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-semibold"></div>
+      <div class="min-w-0">
+        <div class="bubble max-w-[760px] rounded-lg px-4 py-3 text-sm leading-6"></div>
+        <div class="meta mt-2 flex flex-wrap gap-1"></div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const quickPrompts = [
+      '128 numaralı siparişim nerede?',
+      '142 numaralı siparişim neden gelmedi?',
+      'Organik zeytinyağı var mı?',
+      'Kritik stokları listele',
+      'Bugünkü durumu özetle'
+    ];
+
+    const els = {
+      messages: document.getElementById('messages'),
+      form: document.getElementById('chatForm'),
+      input: document.getElementById('messageInput'),
+      typing: document.getElementById('typing'),
+      quick: document.getElementById('quickButtons'),
+      intent: document.getElementById('intentBadge'),
+      tools: document.getElementById('toolList'),
+      note: document.getElementById('dashboardNote'),
+      tpl: document.getElementById('messageTemplate')
+    };
+
+    quickPrompts.forEach((prompt) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-left text-xs text-slate-300 transition hover:border-cyan-400 hover:text-cyan-100';
+      button.textContent = prompt;
+      button.addEventListener('click', () => send(prompt));
+      els.quick.appendChild(button);
+    });
+
+    function addMessage(role, text, meta = {}) {
+      const node = els.tpl.content.cloneNode(true);
+      const root = node.firstElementChild;
+      const avatar = root.querySelector('.avatar');
+      const bubble = root.querySelector('.bubble');
+      const metaEl = root.querySelector('.meta');
+
+      avatar.textContent = role === 'ai' ? 'AI' : 'SİZ';
+      avatar.className += role === 'ai' ? ' bg-cyan-500/20 text-cyan-100' : ' bg-violet-500/20 text-violet-100';
+      bubble.textContent = text;
+      bubble.className += role === 'ai' ? ' bg-slate-800 text-slate-100' : ' bg-cyan-500 text-slate-950';
+      root.className += role === 'user' ? ' flex-row-reverse text-right' : '';
+
+      if (role === 'ai') {
+        if (meta.intent) metaEl.appendChild(chip(meta.intent, 'cyan'));
+        (meta.tool_calls || []).forEach((tool) => metaEl.appendChild(chip(tool, 'violet')));
+        if (meta.error) {
+          const retry = document.createElement('button');
+          retry.type = 'button';
+          retry.className = 'rounded-md border border-cyan-500/30 px-2 py-1 text-xs text-cyan-100 transition hover:border-cyan-300';
+          retry.textContent = 'Tekrar dene';
+          retry.addEventListener('click', () => send(meta.original_message));
+          metaEl.appendChild(retry);
+        }
+      }
+
+      els.messages.appendChild(node);
+      els.messages.scrollTop = els.messages.scrollHeight;
+    }
+
+    function chip(text, color) {
+      const span = document.createElement('span');
+      span.className = color === 'cyan'
+        ? 'rounded-full bg-cyan-500/10 px-2 py-1 font-mono text-[10px] text-cyan-200'
+        : 'rounded-full bg-violet-500/10 px-2 py-1 font-mono text-[10px] text-violet-200';
+      span.textContent = text;
+      return span;
+    }
+
+    async function send(text) {
+      const message = (text || els.input.value).trim();
+      if (!message) return;
+      els.input.value = '';
+      addMessage('user', message);
+      els.typing.classList.remove('hidden');
+
+      let data = null;
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        if (response.ok) data = await response.json();
+      } catch {}
+
+      els.typing.classList.add('hidden');
+
+      if (!data) {
+        data = {
+          intent: 'ERROR',
+          reply: 'Bağlantı hatası. Backend çalıştığında bu ekran POST /api/chat ile cevap alır; aynı mesajı tekrar deneyebilirsiniz.',
+          tool_calls: [],
+          dashboard_note: 'Chat servisi bağlantısı kontrol edilmeli.',
+          error: true,
+          original_message: message
+        };
+      }
+
+      addMessage('ai', data.reply, data);
+      renderMeta(data);
+    }
+
+    function renderMeta(data) {
+      els.intent.textContent = data.intent || '-';
+      els.tools.innerHTML = '';
+      (data.tool_calls || []).forEach((tool) => els.tools.appendChild(chip(tool, 'violet')));
+      if (!data.tool_calls?.length) els.tools.textContent = '-';
+      els.note.textContent = data.dashboard_note || '-';
+    }
+
+    els.form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      send();
+    });
+
+    addMessage('ai', 'Merhaba! Sipariş, kargo, stok ve günlük operasyon özeti için yardımcı olabilirim.', {
+      intent: 'GENERAL',
+      tool_calls: []
+    });
+  </script>
+</body>
+</html>
