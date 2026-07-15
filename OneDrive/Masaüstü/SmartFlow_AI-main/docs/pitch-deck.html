@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -59,6 +59,7 @@
     .cover h1 { color: #fff; font-size: 2.75rem; margin-bottom: 0.2em; }
     .cover .tagline { color: #cbd5e1; max-width: 90%; }
     .cover .meta { margin-top: 2rem; font-size: 0.9rem; color: #94a3b8; }
+    .cover .meta a { color: #93c5fd; }
     .logo-mark {
       font-size: 0.75rem;
       text-transform: uppercase;
@@ -116,83 +117,83 @@
 </head>
 <body>
 
-  <!-- 1 Kapak -->
+  <!-- 1 Cover -->
   <section class="slide cover">
-    <div class="logo-mark">Operasyon • Yapay Zeka • KOBİ</div>
+    <div class="logo-mark">Operations • Artificial Intelligence • SMEs</div>
     <h1>SmartFlow AI</h1>
-    <p class="tagline">KOBİ ve üretici kooperatifleri için veri destekli yapay zeka operasyon asistanı — müşteri iletişimi, sipariş, kargo, stok ve günlük görevler tek akışta.</p>
-    <p class="meta">Pitch deck · 10 sayfa · Mayıs 2026</p>
+    <p class="tagline">A data-driven AI operations assistant for SMEs and producer cooperatives — customer communication, orders, shipments, stock, and daily tasks in a single workflow.</p>
+    <p class="meta">Pitch deck · 10 slides · July 2026 · Live demo: <a href="https://smartflow-frontend-production.up.railway.app/">smartflow-frontend-production.up.railway.app</a></p>
   </section>
 
   <!-- 2 Problem -->
   <section class="slide">
     <h2>Problem</h2>
-    <p>Küçük işletmeler operasyonu çoğu zaman dağınık araçlar ve manuel takiple yürütür. Bu da müşteri deneyimini, stok görünürlüğünü ve yönetici tepki süresini zayıflatır.</p>
+    <p>Small businesses typically run their operations across disconnected tools and manual tracking. This weakens the customer experience, stock visibility, and management response time.</p>
     <div class="grid-2" style="margin-top:1rem;">
-      <div class="card"><strong>Geciken cevaplar</strong> Mesajlar, sipariş ve kargo durumu farklı yerlerde; müşteri soruları hızlı ve tutarlı yanıtlanamaz.</div>
-      <div class="card"><strong>Geç fark edilen riskler</strong> Kritik stok ve kargo gecikmeleri genelde müşteri şikayetinden sonra görünür hale gelir.</div>
-      <div class="card"><strong>Dağınık görevler</strong> Günlük operasyon öncelikleri net bir brifing olmadan kişiye ve güne bağlı kalır.</div>
-      <div class="card"><strong>Verimsizlik</strong> Aynı veriyi tekrar tekrar aramak, kopyalamak ve raporlamak ekip kapasitesini tüketir.</div>
+      <div class="card"><strong>Delayed responses</strong> Messages, order status, and shipment status live in different places, so customer questions can't be answered quickly or consistently.</div>
+      <div class="card"><strong>Late-detected risk</strong> Critical stock shortages and shipment delays usually surface only after a customer complains.</div>
+      <div class="card"><strong>Scattered tasks</strong> Daily operational priorities depend on the person and the day, with no consolidated briefing.</div>
+      <div class="card"><strong>Lost productivity</strong> Searching for, copying, and reporting the same data over and over drains the team's capacity.</div>
     </div>
   </section>
 
-  <!-- 3 Çözüm -->
+  <!-- 3 Solution -->
   <section class="slide">
-    <h2>Çözüm: SmartFlow AI</h2>
-    <p class="tagline" style="max-width:100%; color:#334155;">Müşteri mesajını anlayan, işletmenin <strong>gerçek operasyon verisini</strong> (sipariş, ürün, kargo, stok) yapılandırılmış tool çağrılarıyla sorgulayan ve hem müşteriye hem yöneticiye <strong>aksiyon odaklı</strong> çıktı üreten tek ajanlı asistan.</p>
-    <h3>Temel değer önerisi</h3>
+    <h2>Solution: SmartFlow AI</h2>
+    <p class="tagline" style="max-width:100%; color:#334155;">A single AI agent that understands the customer's message, queries the business's <strong>real operational data</strong> (orders, products, shipments, stock) through structured tool calls, and produces <strong>action-oriented</strong> output for both the customer and the manager.</p>
+    <h3>Core value proposition</h3>
     <ul>
-      <li>Müşteri tarafında: doğrulanabilir, veriye dayalı yanıtlar (tahmini teslimat, gecikme günü, stok durumu).</li>
-      <li>Yönetici tarafında: özet panel, kritik stok ve kargo uyarıları, tedarikçi e-posta taslağı, günlük operasyon brifingi.</li>
-      <li>Klasik sohbet botu değil: <strong>function calling</strong> ile doğrudan veri katmanına bağlı akış.</li>
+      <li>For customers: verifiable, data-backed answers (estimated delivery, delay days, stock availability).</li>
+      <li>For managers: a summary dashboard, critical stock and shipment alerts, supplier email drafts, and a daily operations briefing.</li>
+      <li>Not a scripted chatbot: a flow wired directly to the data layer via <strong>function calling</strong>.</li>
     </ul>
   </section>
 
-  <!-- 4 Hedef kitle -->
+  <!-- 4 Target audience -->
   <section class="slide">
-    <h2>Hedef kitle ve kullanım</h2>
+    <h2>Target audience &amp; usage</h2>
     <div class="grid-2">
       <div>
-        <h3>Kimler için?</h3>
+        <h3>Who is it for?</h3>
         <ul>
-          <li>Küçük ve orta ölçekli üretici / satıcı işletmeler.</li>
-          <li>Üretici kooperatifleri ve ortak depo–sevkiyat modeli.</li>
-          <li>Sipariş + kargo + stok üçgeninde günlük yoğun trafik yaşayan ekipler.</li>
+          <li>Small and mid-sized producer / seller businesses.</li>
+          <li>Producer cooperatives with a shared warehouse–shipping model.</li>
+          <li>Teams handling high daily volume across the order + shipment + stock triangle.</li>
         </ul>
       </div>
       <div>
-        <h3>Kullanıcı rolleri</h3>
+        <h3>User roles</h3>
         <ul>
-          <li><strong>Müşteri / son kullanıcı:</strong> doğal dil ile sipariş, ürün ve kargo soruları.</li>
-          <li><strong>Operasyon / yönetici:</strong> dashboard, görev listesi, uyarı ve brifing.</li>
+          <li><strong>Customer / end user:</strong> natural-language questions about orders, products, and shipments.</li>
+          <li><strong>Operations / manager:</strong> dashboard, task list, alerts, and daily briefing.</li>
         </ul>
-        <p class="muted" style="margin-top:0.75rem;">MVP odak: stabil demo, tek ajan, SQLite üzerinde yapısal veri — ölçek ve entegrasyonlar sonraki faz.</p>
+        <p class="muted" style="margin-top:0.75rem;">MVP focus: a stable, deployed demo — single agent, structured data on SQLite; scaling and further integrations are the next phase.</p>
       </div>
     </div>
   </section>
 
-  <!-- 5 Ürün -->
+  <!-- 5 Product -->
   <section class="slide">
-    <h2>Ürün özellikleri</h2>
+    <h2>Product features</h2>
     <table>
       <thead>
-        <tr><th>Özellik</th><th>Açıklama</th></tr>
+        <tr><th>Feature</th><th>Description</th></tr>
       </thead>
       <tbody>
-        <tr><td>AI müşteri sohbeti</td><td><code>POST /api/chat</code> — intent ve varlık çıkarımı; sipariş no ve ürün adı ile veri sorgusu.</td></tr>
-        <tr><td>Yönetici özeti</td><td><code>GET /api/dashboard/summary</code> — gecikmiş kargo, kritik stok, görev ve mesaj özeti.</td></tr>
-        <tr><td>Günlük brifing</td><td><code>POST /api/tasks/generate</code> — operasyon görevleri ve günün öncelikleri için AI özeti.</td></tr>
-        <tr><td>Uyarı kanalı</td><td><code>POST /api/alerts/send</code> — yöneticiye e-posta uyarısı (Resend entegrasyonu).</td></tr>
-        <tr><td>Tedarikçi iletişimi</td><td>Kritik stok için tedarikçi e-posta taslağı üretimi ve panelde gösterim.</td></tr>
+        <tr><td>AI customer chat</td><td><code>POST /api/chat</code> — intent and entity extraction; queries data by order number or product name.</td></tr>
+        <tr><td>Manager summary</td><td><code>GET /api/dashboard/summary</code> — delayed shipments, critical stock, task and message overview.</td></tr>
+        <tr><td>Daily briefing</td><td><code>POST /api/tasks/generate</code> — AI-generated operations tasks and priorities for the day.</td></tr>
+        <tr><td>Alert channel</td><td><code>POST /api/alerts/send</code> — email alert to the manager (Resend integration).</td></tr>
+        <tr><td>Supplier communication</td><td>Supplier email draft generation for critical stock, shown directly in the dashboard.</td></tr>
       </tbody>
     </table>
   </section>
 
-  <!-- 6 Mimari -->
+  <!-- 6 Architecture -->
   <section class="slide">
-    <h2>Teknik mimari</h2>
-    <p class="muted">Uçtan uca akış: sohbet ve panel → FastAPI → Gemini tabanlı ajan + tool gönderici → SQLAlchemy / SQLite.</p>
-    <div class="arch">Müşteri Chat / Yönetici Dashboard
+    <h2>Technical architecture</h2>
+    <p class="muted">End-to-end flow: chat and dashboard clients → FastAPI → Gemini-powered agent with tool dispatch → SQLAlchemy / SQLite.</p>
+    <div class="arch">Customer Chat / Admin Dashboard
         |
       FastAPI
         |
@@ -201,30 +202,30 @@
  SQLAlchemy / SQLite
         |
  Orders, Products, Shipments, Tasks, Messages</div>
-    <p style="margin-top:0.75rem;">Gemini API kullanılamadığında, aynı tool fonksiyonlarını kullanan <strong>deterministic fallback</strong> ile demo ve testler kırılmadan çalışır.</p>
+    <p style="margin-top:0.75rem;">When the Gemini API is unavailable, a <strong>deterministic fallback</strong> calls the same tool functions, so the demo and test suite keep working without an API key.</p>
   </section>
 
-  <!-- 7 Case'ler -->
+  <!-- 7 Cases -->
   <section class="slide">
-    <h2>Kapsanan senaryolar (MVP)</h2>
+    <h2>Covered scenarios (MVP)</h2>
     <table>
       <thead>
-        <tr><th>#</th><th>Senaryo</th><th>Sistem karşılığı</th></tr>
+        <tr><th>#</th><th>Scenario</th><th>System coverage</th></tr>
       </thead>
       <tbody>
-        <tr><td>1</td><td>Müşteri iletişiminin otomasyonu</td><td>Chat intent’leri ve veri destekli cevap</td></tr>
-        <tr><td>2</td><td>Ürün ve sipariş takibi</td><td>Sipariş / ürün API’leri ve dashboard</td></tr>
-        <tr><td>3</td><td>Kargo süreçleri</td><td>Gecikmiş kargo tespiti ve uyarı metinleri</td></tr>
-        <tr><td>4</td><td>Stok ve envanter</td><td>Kritik stok eşiği ve tedarikçi taslağı</td></tr>
-        <tr><td>5</td><td>İş akışı ve görevler</td><td>Günlük operasyon brifingi ve görev özeti</td></tr>
+        <tr><td>1</td><td>Customer communication automation</td><td>Chat intents with data-backed replies</td></tr>
+        <tr><td>2</td><td>Order &amp; product tracking</td><td>Order/product APIs and dashboard</td></tr>
+        <tr><td>3</td><td>Shipment process management</td><td>Delayed shipment detection and alert messages</td></tr>
+        <tr><td>4</td><td>Stock &amp; inventory management</td><td>Critical stock threshold and supplier draft</td></tr>
+        <tr><td>5</td><td>Workflow &amp; task management</td><td>Daily operations briefing and task summary</td></tr>
       </tbody>
     </table>
-    <p class="muted" style="margin-top:0.5rem;">MVP kapsam dışı örnekler: gelişmiş analitik/tahmin, gerçek WhatsApp, canlı kargo API’leri, vektör veritabanı ve çoklu-ajan orkestrasyonu.</p>
+    <p class="muted" style="margin-top:0.5rem;">Out of scope for the MVP: advanced analytics/forecasting, a real WhatsApp API, live shipping-carrier APIs, a vector database, and multi-agent orchestration.</p>
   </section>
 
-  <!-- 8 Teknoloji -->
+  <!-- 8 Technology -->
   <section class="slide">
-    <h2>Teknoloji yığını</h2>
+    <h2>Technology stack</h2>
     <div class="pill-row">
       <span class="pill">FastAPI</span>
       <span class="pill">Python</span>
@@ -234,34 +235,36 @@
       <span class="pill">Gemini API</span>
       <span class="pill">Tool calling</span>
       <span class="pill">Resend</span>
-      <span class="pill">Vite + React</span>
+      <span class="pill">React + Vite</span>
       <span class="pill">Docker Compose</span>
+      <span class="pill">Railway (deployed)</span>
+      <span class="pill">pytest</span>
     </div>
-    <h3>AI yaklaşımı</h3>
+    <h3>AI approach</h3>
     <ul>
-      <li>Intent sınıfları: sipariş durumu, ürün bilgisi, kargo, stok uyarısı, günlük brifing, genel.</li>
-      <li>Tool örnekleri: <code>get_order_status</code>, <code>get_product_info</code>, <code>get_cargo_status</code>, <code>check_stock_alerts</code>, <code>draft_supplier_email</code>, <code>generate_daily_briefing</code>, <code>send_manager_alert</code>.</li>
+      <li>Intent classes: order status, product info, shipment status, stock alert, daily briefing, general.</li>
+      <li>Example tools: <code>get_order_status</code>, <code>get_product_info</code>, <code>get_cargo_status</code>, <code>check_stock_alerts</code>, <code>draft_supplier_email</code>, <code>generate_daily_briefing</code>, <code>send_manager_alert</code>.</li>
     </ul>
-    <p class="muted" style="margin-top:0.5rem;">Türkçe durum metinleri (ör. “Gecikmiş”, “Kargoda”) iş mantığı ve testlerle uyumlu tutulur.</p>
+    <p class="muted" style="margin-top:0.5rem;">The app's primary demo language is Turkish — the AI understands and replies in Turkish, and Turkish status strings (e.g. "Gecikmiş", "Kargoda") stay consistent with the business logic and test suite.</p>
   </section>
 
-  <!-- 9 Yol haritası -->
+  <!-- 9 Roadmap -->
   <section class="slide">
-    <h2>Yol haritası</h2>
+    <h2>Roadmap</h2>
     <div class="grid-2">
-      <div class="card"><strong>Bugün (MVP)</strong> Tek ajan, SQLite, chat + dashboard + seed verisi; jüri ve yatırımcı için tekrarlanabilir demo; pytest ile sözleşme testleri.</div>
-      <div class="card"><strong>Kısa vade</strong> Gerçek mesajlaşma kanalları (ör. WhatsApp Business), canlı kargo ve ödeme entegrasyonları için bağlayıcı tasarım.</div>
-      <div class="card"><strong>Orta vade</strong> Kullanıcı yetkilendirme, rate limiting, üretim dağıtımı, gözlemlenebilirlik.</div>
-      <div class="card"><strong>Uzun vade</strong> Analitik ve tahmin (Case 6), çoklu depo ve rota optimizasyonu gibi ileri operasyon modülleri.</div>
+      <div class="card"><strong>Today (MVP)</strong> Single agent, SQLite, chat + dashboard + seed data; deployed live demo on Railway via Docker Compose; pytest contract test suite.</div>
+      <div class="card"><strong>Short term</strong> Real messaging channels (e.g. WhatsApp Business), and integration design for live shipping-carrier and payment providers.</div>
+      <div class="card"><strong>Mid term</strong> User authentication, rate limiting, hardened production deployment, observability.</div>
+      <div class="card"><strong>Long term</strong> Analytics and forecasting (Case 6), multi-warehouse support, and route-optimization modules.</div>
     </div>
   </section>
 
-  <!-- 10 Kapanış -->
+  <!-- 10 Closing -->
   <section class="slide closing">
-    <h2>Kapanış</h2>
-    <div class="quote">“SmartFlow AI klasik bir chatbot değil; işletmenin operasyon verisini tool / function calling ile sorgulayan ve yönetici aksiyonu üreten bir yapay zeka asistanıdır.”</div>
-    <p><strong>SmartFlow AI</strong> — KOBİ operasyonunda hız, şeffaflık ve öngörülebilir müşteri deneyimi için tasarlandı.</p>
-    <p class="muted" style="margin-top:1.25rem;">Kaynak: README, mimari ve demo senaryosu dokümantasyonu · Bu PDF <code>docs/pitch-deck.html</code> üzerinden üretilmiştir.</p>
+    <h2>Closing</h2>
+    <div class="quote">"SmartFlow AI is not a scripted chatbot — it's an AI assistant that queries the business's operational data through tool / function calling and produces manager-ready actions."</div>
+    <p><strong>SmartFlow AI</strong> — built for speed, transparency, and a predictable customer experience in SME operations.</p>
+    <p class="muted" style="margin-top:1.25rem;">Live demo: smartflow-frontend-production.up.railway.app · Source: README, architecture, and demo-script documentation · This PDF is generated from <code>docs/pitch-deck.html</code>.</p>
   </section>
 
 </body>
