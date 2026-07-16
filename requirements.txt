@@ -25,3 +25,5 @@ prophet
 lightgbm
 statsmodels
 scikit-learn
+
+PyJWT>=2.8,<3
