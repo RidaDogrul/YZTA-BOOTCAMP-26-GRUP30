@@ -1,0 +1,23 @@
+# Core Dependencies
+streamlit>=1.32.0
+crewai[tools]>=0.193.2
+python-dotenv>=1.0.0
+
+# AI/LLM
+google-generativeai>=0.3.0
+langchain>=0.1.0
+langchain-google-genai>=0.0.6
+
+# Tools
+crewai-tools>=0.2.0
+
+# Web scraping and search
+beautifulsoup4>=4.12.0
+requests>=2.31.0
+
+# File handling
+pydantic>=2.0.0
+pyyaml>=6.0
+
+# Additional utilities
+pandas>=2.0.0
