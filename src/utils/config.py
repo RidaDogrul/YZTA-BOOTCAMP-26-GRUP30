@@ -14,6 +14,15 @@ class Settings(BaseSettings):
     debug: bool = True
     log_level: str = "INFO"
 
+
+    # JWT ayarları
+    jwt_secret_key: str = Field(
+        default="local-development-secret-change-before-production",
+        repr=False,
+    )
+    jwt_algorithm: str = "HS256"
+    jwt_access_token_expire_minutes: int = 60
+
     # LLM / API Keys
     google_api_key: str | None = Field(default=None, repr=False)
 
@@ -50,6 +59,7 @@ class Settings(BaseSettings):
             "google_api_key",
             "aws_access_key_id",
             "aws_secret_access_key",
+            "jwt_secret_key",
         }
 
         for key in secret_keys:
