@@ -7,6 +7,8 @@ FS Notları:
 - Rapor içeriği chat yanıtıyla aynı JSON yapısını kullanır (tutarlı frontend modeli).
 """
 from fastapi import APIRouter, HTTPException, status
+from fastapi import Depends
+from src.api.middleware.auth import CurrentUser, get_current_user
 
 from src.api.v1.schemas.common import ErrorResponse
 from src.api.v1.schemas.reports import ReportListResponse, ReportResponse, ReportSummary
@@ -27,7 +29,9 @@ router = APIRouter()
         500: {"model": ErrorResponse, "description": "Rapor listesi alınamadı"},
     },
 )
-def list_reports() -> ReportListResponse:
+def list_reports(
+    current_user: CurrentUser = Depends(get_current_user),
+) -> ReportListResponse:
     """Geçmiş raporların özet listesini döner."""
     # TODO(Sprint-3): Veritabanı / depolama entegrasyonu
     return ReportListResponse(
@@ -57,7 +61,10 @@ def list_reports() -> ReportListResponse:
         500: {"model": ErrorResponse, "description": "Rapor okunamadı"},
     },
 )
-def get_report(report_id: str) -> ReportResponse:
+def get_report(
+    report_id: str,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> ReportResponse:
     """Tek bir raporun detayını döner."""
     if report_id == "not_found":
         raise HTTPException(
