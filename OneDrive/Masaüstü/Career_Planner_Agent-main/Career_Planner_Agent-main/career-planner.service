@@ -1,0 +1,42 @@
+[Unit]
+Description=Career Planner Agent - AI-powered Career Planning Service
+Documentation=https://github.com/elifkeskin/-Career-Planner-with-AI-Agent
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/career-planner-agent
+
+# Docker container management
+ExecStart=/usr/bin/docker run --rm \
+  --name career-planner-agent \
+  --env-file /root/career-planner-agent/.env \
+  -p 8501:8501 \
+  -v /root/career-planner-agent/memory.json:/app/memory.json \
+  -v /root/career-planner-agent/schedule.json:/app/schedule.json \
+  -v /root/career-planner-agent/schedule.txt:/app/schedule.txt \
+  career-planner:latest
+
+ExecStop=/usr/bin/docker stop career-planner-agent
+
+# Restart policy
+Restart=always
+RestartSec=10
+
+# Resource limits
+MemoryLimit=1G
+CPUQuota=100%
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=career-planner
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
