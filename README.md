@@ -201,7 +201,7 @@ Sprint planning and task tracking are carried out via Jira. Board screenshots an
 | Sprint | Folder | Content |
 |--------|--------|--------|
 | **Sprint I** | [`Jira/Sprint-I/`](./Jira/Sprint-I) | [Board Screenshot 1](./Jira/Sprint-I/Sprint%20I%20-%20Jira.png) · [Board Screenshot 2](./Jira/Sprint-I/Sprint-I-jira-2.png) · [Task List (xlsx)](./Jira/Sprint-I/jira-sprint1%20.xlsx) |
-| **Sprint II** | [`Jira/Sprint-II/`](./Jira/Sprint-II) | *(Coming soon)* |
+| **Sprint II** | [`Jira/Sprint-II/`](./Jira/Sprint-II) | [Board Screenshot 1](./Jira/Sprint-II/Sprint2-Jira.png) · [Board Screenshot 2](./Jira/Sprint-II/Sprint2-Jira-2.png) · [Task List (xlsx)](./Jira/Sprint-II/Jira-Sprint2.xlsx) |
 | **Sprint III** | [`Jira/Sprint-III/`](./Jira/Sprint-III) | *(Coming soon)* |
 
 ---
@@ -215,7 +215,7 @@ Screenshots of the stand-up meetings (2-3 times a week) held throughout each spr
 | Sprint | Folder | Images |
 |--------|--------|-----------|
 | **Sprint I** | [`Daily Scrum/Sprint-I/`](./Daily%20Scrum/Sprint-I) | [1](./Daily%20Scrum/Sprint-I/1000022584.jpg) · [2](./Daily%20Scrum/Sprint-I/1000022585.jpg) · [3](./Daily%20Scrum/Sprint-I/1000022586.jpg) · [4](./Daily%20Scrum/Sprint-I/1000022587.jpg) · [5](./Daily%20Scrum/Sprint-I/20260705-16590.jpg) |
-| **Sprint II** | [`Daily Scrum/Sprint-II/`](./Daily%20Scrum/Sprint-II) | *(Coming soon)* |
+| **Sprint II** | [`Daily Scrum/Sprint-II/`](./Daily%20Scrum/Sprint-II) | [1](./Daily%20Scrum/Sprint-II/Daily%20Scrum-1.png) · [2](./Daily%20Scrum/Sprint-II/Daily%20Scrum-II.png) |
 | **Sprint III** | [`Daily Scrum/Sprint-III/`](./Daily%20Scrum/Sprint-III) | *(Coming soon)* |
 
 ---
@@ -229,7 +229,7 @@ In the product status check folder, you can find the current status of the produ
 | Sprint | Folder | Content |
 |--------|--------|--------|
 | **Sprint I** | [`Ürün_Durumu_Kontrol/Sprint-I/`](./Ürün_Durumu_Kontrol/Sprint-I) | Screenshots of FastAPI setup, LangChain integration, MySQL/MongoDB/PostgreSQL connector tests, AWS S3 test, schema extractor, PII masking, logger tests, local CI checks, and config management/health check tests |
-| **Sprint II** | [`Ürün_Durumu_Kontrol/Sprint-II/`](./Ürün_Durumu_Kontrol/Sprint-II) | *(Coming soon)* |
+| **Sprint II** | [`Ürün_Durumu_Kontrol/Sprint-II/`](./Ürün_Durumu_Kontrol/Sprint-II) | Screenshots of AI Agent Orchestrator, Data Scientist agent, AI Agent Tools, Text-to-SQL layer, MySQL/MongoDB/PostgreSQL/Snowflake connector tests, forecaster demo, performance monitoring, Chat API, Query Cache, Integration and Error Handling tests |
 | **Sprint III** | [`Ürün_Durumu_Kontrol/Sprint-III/`](./Ürün_Durumu_Kontrol/Sprint-III) | *(Coming soon)* |
 
 
