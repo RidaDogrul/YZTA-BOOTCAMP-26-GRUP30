@@ -187,7 +187,7 @@ Summaries of the Retrospective and Review meetings held at the end of each sprin
 | Sprint | Retro | Review |
 |--------|-------|--------|
 | **Sprint I** | [Retro Summary](./Retro%20%26%20Review%20Toplant%C4%B1lar%C4%B1%20-%C3%96zet/Sprint%20I/Retro%20Toplant%C4%B1s%C4%B1%20-%20%C3%96zet.md) | [Review Summary](./Retro%20%26%20Review%20Toplant%C4%B1lar%C4%B1%20-%C3%96zet/Sprint%20I/Review%20Toplant%C4%B1s%C4%B1-%C3%96zet.md) |
-| **Sprint II** | *(Coming soon)* | *(Coming soon)* |
+| **Sprint II** | [Retro Summary](./Retro%20%26%20Review%20Toplant%C4%B1lar%C4%B1%20-%C3%96zet/Sprint%20II/RETRO%20TOPLANTISI%20%C3%96ZET.md) | [Review Summary](./Retro%20%26%20Review%20Toplant%C4%B1lar%C4%B1%20-%C3%96zet/Sprint%20II/REVIEW%20TOPLANTISI%20%C3%96ZET.md) |
 | **Sprint III** | *(Coming soon)* | *(Coming soon)* |
 
 ---
@@ -215,7 +215,7 @@ Screenshots of the stand-up meetings (2-3 times a week) held throughout each spr
 | Sprint | Folder | Images |
 |--------|--------|-----------|
 | **Sprint I** | [`Daily Scrum/Sprint-I/`](./Daily%20Scrum/Sprint-I) | [1](./Daily%20Scrum/Sprint-I/1000022584.jpg) · [2](./Daily%20Scrum/Sprint-I/1000022585.jpg) · [3](./Daily%20Scrum/Sprint-I/1000022586.jpg) · [4](./Daily%20Scrum/Sprint-I/1000022587.jpg) · [5](./Daily%20Scrum/Sprint-I/20260705-16590.jpg) |
-| **Sprint II** | [`Daily Scrum/Sprint-II/`](./Daily%20Scrum/Sprint-II) | [1](./Daily%20Scrum/Sprint-II/Daily%20Scrum-1.png) · [2](./Daily%20Scrum/Sprint-II/Daily%20Scrum-II.png) |
+| **Sprint II** | [`Daily Scrum/Sprint-II/`](./Daily%20Scrum/Sprint-II) | [1](./Daily%20Scrum/Sprint-II/Daily%20Scrum-I.png) · [2](./Daily%20Scrum/Sprint-II/Daily%20Scrum-II.png) · [3](./Daily%20Scrum/Sprint-II/Daily-Scrum-III.png) |
 | **Sprint III** | [`Daily Scrum/Sprint-III/`](./Daily%20Scrum/Sprint-III) | *(Coming soon)* |
 
 ---
