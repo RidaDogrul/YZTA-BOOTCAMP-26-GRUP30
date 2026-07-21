@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Literal
+from collections.abc import Mapping
+from dataclasses import dataclass, field, replace
+from typing import Literal, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -12,8 +13,18 @@ from statsmodels.tsa.arima.model import ARIMA
 from src.utils.logger import get_logger
 from src.utils.metrics import measure_model_inference
 
-ModelName = Literal["prophet", "arima", "lightgbm"]
-AggregationMethod = Literal["sum", "mean"]
+ModelName: TypeAlias = Literal["prophet", "arima", "lightgbm"]
+AggregationMethod: TypeAlias = Literal["sum", "mean"]
+
+PredictionDates: TypeAlias = pd.Series | pd.DatetimeIndex | list[pd.Timestamp]
+NumericValues: TypeAlias = pd.Series | np.ndarray | list[float]
+IntervalPair: TypeAlias = tuple[NumericValues, NumericValues]
+
+PREDICTION_INTERVAL_LEVELS: tuple[int, ...] = (80, 95)
+_INTERVAL_QUANTILES: Mapping[int, tuple[float, float]] = {
+    80: (0.10, 0.90),
+    95: (0.025, 0.975),
+}
 
 logger = get_logger(__name__)
 
@@ -32,6 +43,8 @@ class ForecastConfig:
     lightgbm_lags: tuple[int, ...] = (1, 7, 14, 30)
     random_state: int = 42
     clip_negative_predictions: bool = True
+    include_prediction_intervals: bool = False
+    prophet_uncertainty_samples: int = 1000
 
     def __post_init__(self) -> None:
         if self.forecast_days <= 0:
@@ -54,6 +67,9 @@ class ForecastConfig:
 
         if any(lag <= 0 for lag in self.lightgbm_lags):
             raise ValueError("lightgbm_lags içindeki değerler pozitif olmalıdır.")
+
+        if self.prophet_uncertainty_samples <= 0:
+            raise ValueError("prophet_uncertainty_samples pozitif olmalıdır.")
 
 
 @dataclass
@@ -209,10 +225,11 @@ def create_future_dates(
 
 
 def _build_forecast_frame(
-    prediction_dates: pd.Series | pd.DatetimeIndex | list[pd.Timestamp],
-    predictions: pd.Series | np.ndarray | list[float],
+    prediction_dates: PredictionDates,
+    predictions: NumericValues,
+    prediction_intervals: Mapping[int, IntervalPair] | None = None,
 ) -> pd.DataFrame:
-    """Model çıktısını ortak ds/yhat DataFrame formatına dönüştürür."""
+    """Model çıktısını ortak tahmin ve opsiyonel aralık formatına dönüştürür."""
     dates = pd.DatetimeIndex(pd.to_datetime(prediction_dates))
     predicted_values = np.asarray(predictions, dtype=float).reshape(-1)
 
@@ -222,14 +239,100 @@ def _build_forecast_frame(
     if not np.isfinite(predicted_values).all():
         raise ValueError("Model sonlu olmayan bir tahmin değeri üretti.")
 
-    return pd.DataFrame({"ds": dates, "yhat": predicted_values})
+    forecast = pd.DataFrame({"ds": dates, "yhat": predicted_values})
+
+    if prediction_intervals is None:
+        return forecast
+
+    missing_levels = [
+        level
+        for level in PREDICTION_INTERVAL_LEVELS
+        if level not in prediction_intervals
+    ]
+    if missing_levels:
+        raise ValueError(
+            "Eksik tahmin aralığı seviyeleri: "
+            + ", ".join(f"%{level}" for level in missing_levels)
+        )
+
+    for level in PREDICTION_INTERVAL_LEVELS:
+        lower_values, upper_values = prediction_intervals[level]
+        lower = np.asarray(lower_values, dtype=float).reshape(-1)
+        upper = np.asarray(upper_values, dtype=float).reshape(-1)
+
+        if len(lower) != len(dates) or len(upper) != len(dates):
+            raise ValueError(
+                f"%{level} tahmin aralığı ile tahmin tarihi sayısı eşleşmiyor."
+            )
+
+        if not np.isfinite(lower).all() or not np.isfinite(upper).all():
+            raise ValueError(f"%{level} tahmin aralığı sonlu olmayan değer içeriyor.")
+
+        # Quantile modellerinde nadiren görülebilen kesişmeleri güvenli biçimde düzelt.
+        forecast[f"yhat_lower_{level}"] = np.minimum(lower, predicted_values)
+        forecast[f"yhat_upper_{level}"] = np.maximum(upper, predicted_values)
+
+    # %95 bandı %80 bandından daha dar olamaz.
+    forecast["yhat_lower_95"] = np.minimum(
+        forecast["yhat_lower_95"],
+        forecast["yhat_lower_80"],
+    )
+    forecast["yhat_upper_95"] = np.maximum(
+        forecast["yhat_upper_95"],
+        forecast["yhat_upper_80"],
+    )
+    return forecast
+
+
+def _intervals_from_samples(
+    samples: np.ndarray,
+    expected_length: int,
+) -> dict[int, IntervalPair]:
+    """Posterior tahmin örneklerinden %80 ve %95 aralıklarını hesaplar."""
+    sample_matrix = np.asarray(samples, dtype=float)
+
+    if sample_matrix.ndim != 2:
+        raise ValueError("Prophet tahmin örnekleri iki boyutlu olmalıdır.")
+
+    if sample_matrix.shape[0] != expected_length:
+        if sample_matrix.shape[1] == expected_length:
+            sample_matrix = sample_matrix.T
+        else:
+            raise ValueError("Prophet tahmin örneği sayısı tarihlerle eşleşmiyor.")
+
+    if not np.isfinite(sample_matrix).all():
+        raise ValueError("Prophet sonlu olmayan tahmin örnekleri üretti.")
+
+    return {
+        level: (
+            np.quantile(sample_matrix, lower_quantile, axis=1),
+            np.quantile(sample_matrix, upper_quantile, axis=1),
+        )
+        for level, (lower_quantile, upper_quantile) in _INTERVAL_QUANTILES.items()
+    }
+
+
+def _split_confidence_interval(
+    values: pd.DataFrame | np.ndarray,
+    expected_length: int,
+    level: int,
+) -> IntervalPair:
+    """statsmodels güven aralığı çıktısını alt ve üst dizilere ayırır."""
+    interval_array = np.asarray(values, dtype=float)
+    if interval_array.shape != (expected_length, 2):
+        raise ValueError(f"ARIMA %{level} tahmin aralığı beklenen biçimde değil.")
+
+    return interval_array[:, 0], interval_array[:, 1]
 
 
 def forecast_prophet(
     train: pd.DataFrame,
-    prediction_dates: pd.Series | pd.DatetimeIndex | list[pd.Timestamp],
+    prediction_dates: PredictionDates,
+    config: ForecastConfig | None = None,
 ) -> pd.DataFrame:
     """Prophet modelini eğitir ve verilen tarihler için tahmin üretir."""
+    config = config or ForecastConfig()
+
     if train.empty:
         raise ValueError("Prophet boş eğitim verisiyle çalıştırılamaz.")
 
@@ -240,21 +343,33 @@ def forecast_prophet(
         weekly_seasonality=True,
         yearly_seasonality="auto",
         daily_seasonality=False,
+        uncertainty_samples=config.prophet_uncertainty_samples,
     )
     model.fit(train[["ds", "y"]].copy())
 
     future = pd.DataFrame({"ds": pd.to_datetime(prediction_dates)})
     prediction_result = model.predict(future)
 
+    prediction_intervals: Mapping[int, IntervalPair] | None = None
+    if config.include_prediction_intervals:
+        predictive_samples = model.predictive_samples(future)
+        if "yhat" not in predictive_samples:
+            raise ValueError("Prophet tahmin örneklerinde 'yhat' bulunamadı.")
+        prediction_intervals = _intervals_from_samples(
+            samples=np.asarray(predictive_samples["yhat"], dtype=float),
+            expected_length=len(future),
+        )
+
     return _build_forecast_frame(
         prediction_dates=future["ds"],
         predictions=prediction_result["yhat"],
+        prediction_intervals=prediction_intervals,
     )
 
 
 def forecast_arima(
     train: pd.DataFrame,
-    prediction_dates: pd.Series | pd.DatetimeIndex | list[pd.Timestamp],
+    prediction_dates: PredictionDates,
     config: ForecastConfig | None = None,
 ) -> pd.DataFrame:
     """ARIMA modelini eğitir ve verilen tarihler için tahmin üretir."""
@@ -270,11 +385,24 @@ def forecast_arima(
     target_values = train["y"].astype(float).to_numpy()
     model = ARIMA(endog=target_values, order=config.arima_order)
     fitted_model = model.fit()
-    predictions = fitted_model.forecast(steps=len(dates))
+    forecast_result = fitted_model.get_forecast(steps=len(dates))
+    predictions = np.asarray(forecast_result.predicted_mean, dtype=float)
+
+    prediction_intervals: Mapping[int, IntervalPair] | None = None
+    if config.include_prediction_intervals:
+        prediction_intervals = {
+            level: _split_confidence_interval(
+                values=forecast_result.conf_int(alpha=1 - (level / 100)),
+                expected_length=len(dates),
+                level=level,
+            )
+            for level in PREDICTION_INTERVAL_LEVELS
+        }
 
     return _build_forecast_frame(
         prediction_dates=dates,
         predictions=predictions,
+        prediction_intervals=prediction_intervals,
     )
 
 
@@ -349,7 +477,7 @@ def _build_lightgbm_feature_row(
 
 def forecast_lightgbm(
     train: pd.DataFrame,
-    prediction_dates: pd.Series | pd.DatetimeIndex | list[pd.Timestamp],
+    prediction_dates: PredictionDates,
     config: ForecastConfig | None = None,
 ) -> pd.DataFrame:
     """LightGBM modelini eğitir ve recursive biçimde tahmin üretir."""
@@ -372,8 +500,37 @@ def forecast_lightgbm(
     )
     model.fit(training_frame[feature_columns], training_frame["y"])
 
+    quantile_models: dict[float, LGBMRegressor] = {}
+    if config.include_prediction_intervals:
+        quantiles = sorted(
+            {
+                quantile
+                for pair in _INTERVAL_QUANTILES.values()
+                for quantile in pair
+            }
+        )
+        for quantile in quantiles:
+            quantile_model = LGBMRegressor(
+                objective="quantile",
+                alpha=quantile,
+                n_estimators=300,
+                learning_rate=0.05,
+                num_leaves=31,
+                random_state=config.random_state,
+                n_jobs=1,
+                verbosity=-1,
+            )
+            quantile_model.fit(
+                training_frame[feature_columns],
+                training_frame["y"],
+            )
+            quantile_models[quantile] = quantile_model
+
     history = train.sort_values("ds")["y"].astype(float).tolist()
     predictions: list[float] = []
+    quantile_predictions: dict[float, list[float]] = {
+        quantile: [] for quantile in quantile_models
+    }
 
     for prediction_date in dates:
         feature_row = _build_lightgbm_feature_row(
@@ -388,18 +545,36 @@ def forecast_lightgbm(
             prediction = max(0.0, prediction)
 
         predictions.append(prediction)
+
+        for quantile, quantile_model in quantile_models.items():
+            quantile_prediction = float(quantile_model.predict(feature_data)[0])
+            if config.clip_negative_predictions:
+                quantile_prediction = max(0.0, quantile_prediction)
+            quantile_predictions[quantile].append(quantile_prediction)
+
         history.append(prediction)
+
+    prediction_intervals: Mapping[int, IntervalPair] | None = None
+    if config.include_prediction_intervals:
+        prediction_intervals = {
+            level: (
+                quantile_predictions[lower_quantile],
+                quantile_predictions[upper_quantile],
+            )
+            for level, (lower_quantile, upper_quantile) in _INTERVAL_QUANTILES.items()
+        }
 
     return _build_forecast_frame(
         prediction_dates=dates,
         predictions=predictions,
+        prediction_intervals=prediction_intervals,
     )
 
 
 def _forecast_with_model(
     model_name: ModelName,
     train: pd.DataFrame,
-    prediction_dates: pd.Series | pd.DatetimeIndex | list[pd.Timestamp],
+    prediction_dates: PredictionDates,
     config: ForecastConfig,
 ) -> pd.DataFrame:
     """Model adına göre ilgili tahmin fonksiyonunu çalıştırır."""
@@ -407,6 +582,7 @@ def _forecast_with_model(
         return forecast_prophet(
             train=train,
             prediction_dates=prediction_dates,
+            config=config,
         )
 
     if model_name == "arima":
@@ -440,6 +616,10 @@ def model_selector(
     verirse hata kaydedilir ve diğer modeller değerlendirilmeye devam edilir.
     """
     config = config or ForecastConfig()
+    validation_config = replace(
+        config,
+        include_prediction_intervals=False,
+    )
     time_series = prepare_time_series(
         df=df,
         date_column=date_column,
@@ -462,7 +642,7 @@ def model_selector(
                   model_name=model_name,
                   train=train,
                   prediction_dates=validation["ds"],
-                  config=config,
+                  config=validation_config,
                 )
             score = evaluate_forecast(
                 validation=validation,
@@ -520,6 +700,11 @@ def model_selector(
             "selected_model": selected_model,
             "mape": round(model_scores[selected_model], 4),
             "forecast_days": config.forecast_days,
+            "prediction_intervals": (
+                list(PREDICTION_INTERVAL_LEVELS)
+                if config.include_prediction_intervals
+                else []
+            ),
         },
     )
 
