@@ -359,7 +359,7 @@ if __name__ == "__main__":
         result = agent.run(
             question="Önümüzdeki hafta satışlar ne olur?",
             cleaned_df=df,
-            forecast_result=forecast_result,
+            forecast_result=forecast_result,  # type: ignore[arg-type]  # test için sahte nesne
             cleaning_report=cleaning_report,
             language=lang,  # type: ignore[arg-type]
         )
