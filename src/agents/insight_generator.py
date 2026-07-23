@@ -299,7 +299,7 @@ class InsightGeneratorAgent:
                 metrics=metrics,
                 error=f"Rapor JSON olarak ayrıştırılamadı: {exc}",
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:  
             logger.error("Agent 3 başarısız", extra={"error": str(exc)})
             return InsightResult(
                 chart_data=chart_data,
@@ -409,7 +409,8 @@ if __name__ == "__main__":
             prefix = f"[{priority}] " if priority else ""
             print(f" - {prefix}{item['action']}")
         if result.action_reasoning:
-            print(f"\nGerekçe: {result.action_reasoning}")
+            label = "Gerekçe" if lang == "tr" else "Reasoning"
+            print(f"\n{label}: {result.action_reasoning}")
         print(f"\n--- Grafik verisi ({len(result.chart_data)} nokta, ilk 3) ---")
         print(result.chart_data[:3])
         print("\n--- API payload (ChatResponse formatı) ---")
