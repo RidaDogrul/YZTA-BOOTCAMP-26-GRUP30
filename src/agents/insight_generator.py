@@ -4,11 +4,12 @@ Insight Generator Agent (Agent 3) — Task S3-H1
 Temizlenmiş veriyi ve tahmin sonuçlarını alıp kullanıcıya sunulacak
 Türkçe/İngilizce rapora çevirir.
 
-İŞ BÖLÜMÜ (önemli tasarım kararı):
-  - LLM YALNIZCA metin üretir: summary + action_plan.
+İŞ BÖLÜMÜ (tasarım kararı):
+  - LLM YALNIZCA metin üretir: summary + aday aksiyonlar.
   - chart_data ve tüm sayısal metrikler KOD tarafında gerçek veriden
-    hesaplanır. Böylece LLM'in sayı uydurma (hallucination) riski ortadan
-    kalkar; grafikte gösterilen her değer gerçek veriden gelir.
+    hesaplanır. Böylece LLM'in sayı uydurma riski ortadan kalkar.
+  - Nihai aksiyon planı, S3-H2'deki ActionPlanner'a devredilir; Agent 3'ün
+    ürettiği aksiyonlar oraya "aday" (candidate_actions) olarak gider.
 
 Çıktı, chat.py'daki ChatResponse şemasına doğrudan oturur:
   {status, summary, sql_query, chart_data, action_plan}
@@ -28,6 +29,7 @@ from src.agents.prompts import (
     INSIGHT_GENERATOR_PROMPT_EN,
     INSIGHT_GENERATOR_PROMPT_TR,
 )
+from src.agents.tools.action_planner import ActionPlanner
 from src.utils.logger import get_logger
 
 # ForecastResult'ı yalnızca TİP DENETİMİ için import ediyoruz. Çalışma anında
@@ -56,7 +58,10 @@ class InsightResult:
     action_plan: list[str] = field(default_factory=list)
     chart_data: list[dict[str, Any]] = field(default_factory=list)
     language: str = "tr"
-    metrics: dict[str, Any] = field(default_factory=dict)  # kodun hesapladığı metrikler
+    metrics: dict[str, Any] = field(default_factory=dict)   # kodun hesapladığı metrikler
+    action_reasoning: str = ""                              # planın genel gerekçesi
+    action_details: list[dict[str, Any]] = field(default_factory=list)  # action/reason/priority
+    action_plan_source: str = "insight_llm"                 # "llm" | "fallback" | "insight_llm"
     error: str | None = None
 
     @property
@@ -92,10 +97,7 @@ def _build_data_context(df: pd.DataFrame) -> dict[str, Any]:
 
     numeric = df.select_dtypes("number")
     if not numeric.empty:
-        # Sayısal sütunların temel istatistikleri (ortalama, min, max...)
-        context["numeric_summary"] = json.loads(
-            numeric.describe().round(2).to_json()
-        )
+        context["numeric_summary"] = json.loads(numeric.describe().round(2).to_json())
     return context
 
 
@@ -204,11 +206,25 @@ class InsightGeneratorAgent:
     Args:
         llm: LangChain sohbet modeli (verilmezse get_llm() kullanılır).
         language: Varsayılan rapor dili ("tr" | "en").
+        action_planner: S3-H2 ActionPlanner örneği. Verilmezse aynı LLM ile
+            otomatik kurulur.
+        use_action_planner: False ise plan üretimi ActionPlanner'a devredilmez;
+            Agent 3'ün kendi LLM önerileri kullanılır (test/çevrimdışı senaryo).
     """
 
-    def __init__(self, llm: Any = None, language: Language = "tr") -> None:
+    def __init__(
+        self,
+        llm: Any = None,
+        language: Language = "tr",
+        action_planner: ActionPlanner | None = None,
+        use_action_planner: bool = True,
+    ) -> None:
         self._llm = llm or get_llm()
         self._default_language = language
+        # Aynı LLM örneğini paylaşıyoruz; gereksiz ikinci model kurulumu olmasın.
+        self._action_planner: ActionPlanner | None = (
+            (action_planner or ActionPlanner(llm=self._llm)) if use_action_planner else None
+        )
 
     def run(
         self,
@@ -251,17 +267,15 @@ class InsightGeneratorAgent:
 
         # --- 2) chart_data'yı KOD hesaplar (LLM değil) ---
         chart_data = _build_chart_data(cleaned_df, forecast_result)
-        metrics = context.get("forecast", {})
+        metrics: dict[str, Any] = context.get("forecast", {})
 
-        # --- 3) LLM'den yalnızca metin iste ---
+        # --- 3) LLM'den özet + aday aksiyonlar iste ---
         system_prompt = (
             INSIGHT_GENERATOR_PROMPT_TR if lang == "tr" else INSIGHT_GENERATOR_PROMPT_EN
         )
         messages = [
             SystemMessage(content=system_prompt),
-            HumanMessage(
-                content=json.dumps(context, ensure_ascii=False, default=str)
-            ),
+            HumanMessage(content=json.dumps(context, ensure_ascii=False, default=str)),
         ]
 
         logger.info(
@@ -275,7 +289,7 @@ class InsightGeneratorAgent:
             response = self._llm.invoke(messages)
             raw_text = str(getattr(response, "content", response))
             parsed = _extract_json(raw_text)
-        except (ValueError, json.JSONDecodeError) as exc:
+        except ValueError as exc:
             # JSON parse edilemedi: ham metni özet olarak kullan, akışı kesme.
             logger.error("Agent 3 JSON ayrıştırma hatası", extra={"error": str(exc)})
             return InsightResult(
@@ -294,18 +308,41 @@ class InsightGeneratorAgent:
                 error=f"İçgörü üretme hatası: {exc}",
             )
 
+        summary = str(parsed.get("summary", "")).strip()
+        candidate_actions = _normalize_action_plan(parsed.get("action_plan"))
+
+        # --- 4) Nihai aksiyon planını S3-H2 ActionPlanner'a devret ---
         result = InsightResult(
-            summary=str(parsed.get("summary", "")).strip(),
-            action_plan=_normalize_action_plan(parsed.get("action_plan")),
+            summary=summary,
+            action_plan=candidate_actions,
             chart_data=chart_data,
             language=lang,
             metrics=metrics,
         )
 
+        if self._action_planner is not None:
+            plan = self._action_planner.run(
+                question=question,
+                summary=summary,
+                metrics=metrics,
+                chart_data=chart_data,
+                candidate_actions=candidate_actions,   # Agent 3'ün önerileri aday olarak gider
+                language=lang,
+            )
+            if plan.actions:
+                result.action_plan = plan.action_plan
+                result.action_reasoning = plan.reasoning
+                result.action_details = [item.as_dict() for item in plan.actions]
+                result.action_plan_source = plan.source
+            # Not: planner fallback'e düşse bile kullanılabilir bir plan döner,
+            # bu yüzden InsightResult.error'a dokunmuyoruz; kaynak bilgisi
+            # action_plan_source alanında görünür.
+
         logger.info(
             "Agent 3 tamamlandı",
             extra={"summary_length": len(result.summary),
                    "action_items": len(result.action_plan),
+                   "action_source": result.action_plan_source,
                    "chart_points": len(result.chart_data)},
         )
         return result
@@ -366,9 +403,14 @@ if __name__ == "__main__":
         print("Başarılı:", result.success)
         print("\n--- Özet ---")
         print(result.summary)
-        print("\n--- Aksiyon planı ---")
-        for item in result.action_plan:
-            print(" -", item)
+        print(f"\n--- Aksiyon planı (kaynak: {result.action_plan_source}) ---")
+        for item in result.action_details or [{"action": a} for a in result.action_plan]:
+            priority = item.get("priority", "")
+            prefix = f"[{priority}] " if priority else ""
+            print(f" - {prefix}{item['action']}")
+        if result.action_reasoning:
+            label = "Gerekçe" if lang == "tr" else "Reasoning"
+            print(f"\n{label}: {result.action_reasoning}")
         print(f"\n--- Grafik verisi ({len(result.chart_data)} nokta, ilk 3) ---")
         print(result.chart_data[:3])
         print("\n--- API payload (ChatResponse formatı) ---")
