@@ -64,8 +64,8 @@
     <button class="source-tab active" data-src="postgresql" role="tab">PostgreSQL</button>
     <button class="source-tab" data-src="mysql" role="tab">MySQL</button>
     <button class="source-tab" data-src="mongodb" role="tab">MongoDB</button>
-    <button class="source-tab" data-src="s3" role="tab">S3</button>
-    <button class="source-tab" data-src="snowflake" role="tab">Snowflake</button>
+    <button class="source-tab" data-src="s3" role="tab">☁ S3</button>
+    <button class="source-tab" data-src="snowflake" role="tab">❄ Snowflake</button>
   </div>
   <input type="hidden" id="sourceType" value="postgresql" />
 
@@ -198,6 +198,90 @@
     <pre class="schema-body" id="schemaText"></pre>
   </div>
 
+  <!-- Veri Birleştirme Paneli -->
+  <div class="sidebar-section-label" id="mergeSectionLabel" style="display:none">Veri Birleştirme</div>
+  <div class="merge-bar" id="mergeBar">
+    <div class="merge-bar-title">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" style="width:12px;height:12px;vertical-align:-1px;margin-right:4px" aria-hidden="true">
+        <circle cx="3" cy="7" r="2"/><circle cx="11" cy="3" r="2"/><circle cx="11" cy="11" r="2"/>
+        <path d="M5 7h3M8.5 3.7L5 6.3M8.5 10.3L5 7.7" stroke-linecap="round"/>
+      </svg>
+      Bağlı Kaynaklar &amp; Tablo Seçimi
+    </div>
+    <p class="merge-bar-hint">
+      Her kaynağı genişletip hangi tabloların sorgulanacağını seçin.
+      İkinci kaynak eklemek için <strong>Kaynak Ekle</strong>'ye tıklayın.
+    </p>
+
+    <!-- Kaynak accordion listesi (JS tarafından doldurulur) -->
+    <div id="mergeSourceList"></div>
+
+    <!-- Kaynak ekleme butonu -->
+    <button class="btn-add-source" id="btnAddSource" title="Yeni veri kaynağı ekle">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px;flex-shrink:0">
+        <path d="M7 1v12M1 7h12" stroke-linecap="round"/>
+      </svg>
+      Kaynak Ekle
+    </button>
+
+    <!-- ── Kaynak ekleme formu (toggle ile açılır) ──────── -->
+    <div class="add-source-form hidden" id="addSourceForm">
+      <div class="add-source-form-title">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" style="width:11px;height:11px;vertical-align:-1px;margin-right:4px" aria-hidden="true">
+          <path d="M6 1v10M1 6h10" stroke-linecap="round"/>
+        </svg>
+        Yeni Veri Kaynağı Bağla
+      </div>
+
+      <!-- Kaynak tipi seçici (birincil kaynak hariç — JS tarafından render edilir) -->
+      <div class="asf-type-label">Kaynak Türü</div>
+      <div class="asf-type-picker" id="asfTypePicker">
+        <!-- JS ile doldurulur -->
+      </div>
+
+      <!-- Dinamik bağlantı alanları (seçilen türe göre — JS ile doldurulur) -->
+      <div id="asfFields">
+        <!-- JS ile doldurulur -->
+      </div>
+
+      <!-- İsteğe bağlı kaynak adı -->
+      <div class="field-group" style="padding:0;margin-top:2px">
+        <label class="field-label" for="addSourceAlias">
+          Kaynak Adı <span style="opacity:.5">(isteğe bağlı)</span>
+        </label>
+        <input class="field-input" type="text" id="addSourceAlias"
+               placeholder="örn: Finans DB, Müşteri S3…" autocomplete="off"/>
+      </div>
+
+      <div class="add-source-form-row">
+        <button class="btn-add-source-confirm" id="btnAddSourceConfirm">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px" aria-hidden="true">
+            <path d="M1 6l4 4 6-7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Bağlan &amp; Ekle
+        </button>
+        <button class="btn-add-source-cancel" id="btnAddSourceCancel">İptal</button>
+      </div>
+    </div>
+
+    <!-- Birleştirerek sorgula -->
+    <button class="btn-run-merge" id="btnRunMerge" disabled title="En az 2 kaynak gereklidir">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px" aria-hidden="true">
+        <path d="M2 8h4l2-4 2 8 2-4h2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Tüm Kaynaklarla Sorgula
+    </button>
+  </div>
+
+  <!-- Veri Arama -->
+  <div class="data-search-wrap" id="dataSearchWrap">
+    <input class="data-search-input" id="dataSearchInput"
+           type="text" placeholder="Verilerde ara… (tablo, sütun, değer)"
+           autocomplete="off" spellcheck="false" />
+    <span class="data-search-icon">🔍</span>
+    <div class="data-search-results" id="dataSearchResults"></div>
+  </div>
+
   <!-- Session chip -->
   <div class="session-chip hidden" id="sessionInfo">
     <span class="session-chip-dot"></span>
@@ -224,7 +308,14 @@
       <span class="topbar-badge" id="topbarBadge"></span>
     </div>
     <div class="topbar-right">
-      <button class="icon-btn" id="btnClearHistory" title="Geçmişi temizle" aria-label="Geçmişi temizle">
+      <button class="btn-clear-chat" id="btnClearChat" aria-label="Sohbeti temizle">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5" stroke-linecap="round"/>
+          <path d="M3 4l.8 9.2A1 1 0 0 0 4.8 14h6.4a1 1 0 0 0 1-.8L13 4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Sohbeti Temizle
+      </button>
+      <button class="icon-btn" id="btnClearHistory" title="localStorage geçmişini sil" aria-label="Geçmişi sil" style="display:none">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M5 7h10l-1 9H6L5 7z" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M8 10v4M12 10v4M3 7h14" stroke-linecap="round"/>
