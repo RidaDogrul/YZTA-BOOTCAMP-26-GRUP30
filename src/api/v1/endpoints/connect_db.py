@@ -23,6 +23,11 @@ from src.api.v1.schemas.connect_db import (
     SessionInfoResponse,
     SessionListResponse,
     TestConnectionResponse,
+    AddSourceRequest,
+    AddSourceResponse,
+    RemoveSourceResponse,
+    MultiSourceSchemaResponse,
+    SourceEntry,
 )
 from src.connectors.base import BaseConnector
 from src.connectors.mongodb import MongoConnector
@@ -157,6 +162,10 @@ def connect_data_source(payload: ConnectDbRequest) -> ConnectDbResponse:
         source_type=payload.source_type,
     )
 
+    # Oluşturulan birincil kaynağın source_id'sini al
+    all_sources = session_store.get_all_connectors(session_id) or []
+    primary_source_id = all_sources[0]["source_id"] if all_sources else "primary"
+
     message = _build_connect_message(payload.source_type, result)
     logger.info("Session açıldı", extra={"session_id": session_id, "source_type": payload.source_type})
 
@@ -164,6 +173,7 @@ def connect_data_source(payload: ConnectDbRequest) -> ConnectDbResponse:
         source_type=payload.source_type,
         message=message,
         session_id=session_id,
+        source_id=primary_source_id,
     )
 
 
@@ -398,3 +408,256 @@ def _s3_files_to_schema_text(files: list[dict]) -> str:
     for f in files:
         lines.append(f"  - {f['key']}  ({f['size']} bayt, {f['extension']})")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Yardımcı: AddSourceRequest → ConnectDbRequest benzeri connector factory
+# ---------------------------------------------------------------------------
+def _build_connector_from_add_request(payload: AddSourceRequest) -> BaseConnector:
+    """AddSourceRequest'ten uygun konnektör oluşturur."""
+
+    class _FakePayload:
+        """AddSourceRequest → ConnectDbRequest uyumlu duck-type wrapper."""
+        def __init__(self, src: AddSourceRequest) -> None:
+            self.source_type       = src.source_type
+            self.connection_url    = src.connection_url
+            self.mongodb_uri       = src.mongodb_uri
+            self.bucket_name       = src.bucket_name
+            self.aws_access_key_id = src.aws_access_key_id
+            self.aws_secret_access_key = src.aws_secret_access_key
+            self.aws_region        = src.aws_region
+            self.prefix            = src.prefix
+            self.snowflake_account   = src.snowflake_account
+            self.snowflake_user      = src.snowflake_user
+            self.snowflake_password  = src.snowflake_password
+            self.snowflake_database  = src.snowflake_database
+            self.snowflake_schema    = src.snowflake_schema
+            self.snowflake_warehouse = src.snowflake_warehouse
+            self.snowflake_role      = src.snowflake_role
+
+    return _build_connector(_FakePayload(payload))  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# POST /add-source
+# ---------------------------------------------------------------------------
+@router.post(
+    "/add-source",
+    response_model=AddSourceResponse,
+    summary="Mevcut oturuma yeni veri kaynağı ekle",
+    description=(
+        "Var olan bir session'a ikinci (veya daha fazla) veri kaynağı ekler. "
+        "Frontend Merge panelindeki 'Bağlan ve Ekle' akışı bu endpoint'i kullanır. "
+        "Eklenen tüm kaynaklar /chat/ask sorgularında birlikte kullanılabilir."
+    ),
+    responses={
+        400: {"model": ErrorResponse, "description": "Eksik parametre veya bağlantı hatası"},
+        404: {"model": ErrorResponse, "description": "Ana oturum bulunamadı"},
+        500: {"model": ErrorResponse, "description": "Bağlantı kurulamadı"},
+    },
+)
+def add_source(payload: AddSourceRequest) -> AddSourceResponse:
+    # Ana session var mı?
+    info = session_store.get_session_info(payload.session_id)
+    if info is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Oturum bulunamadı veya süresi doldu.",
+        )
+
+    # Konnektör kur ve bağlantıyı test et
+    try:
+        connector = _build_connector_from_add_request(payload)
+        result = connector.test_connection()
+    except (ValueError, NotImplementedError) as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.error(
+            "Ek kaynak bağlantı hatası",
+            extra={"source_type": payload.source_type, "error": str(exc)},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Bağlantı kurulamadı: {exc}",
+        ) from exc
+
+    if not result["ok"]:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result["message"],
+        )
+
+    alias = payload.alias or payload.source_type
+    source_id = session_store.add_source(
+        session_id=payload.session_id,
+        connector=connector,
+        source_type=payload.source_type,
+        alias=alias,
+    )
+    if source_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Kaynak eklenemedi — oturum bulunamadı veya süresi doldu.",
+        )
+
+    # Güncel kaynak listesini döndür
+    updated_info = session_store.get_session_info(payload.session_id)
+    sources = [
+        SourceEntry(
+            source_id=s["source_id"],
+            source_type=s["source_type"],
+            alias=s["alias"],
+        )
+        for s in (updated_info["sources"] if updated_info else [])
+    ]
+
+    message = _build_connect_message(payload.source_type, result)
+    logger.info(
+        "Ek kaynak eklendi",
+        extra={
+            "session_id": payload.session_id,
+            "source_id": source_id,
+            "source_type": payload.source_type,
+        },
+    )
+
+    return AddSourceResponse(
+        ok=True,
+        session_id=payload.session_id,
+        source_id=source_id,
+        source_type=payload.source_type,
+        alias=alias,
+        message=message,
+        sources=sources,
+    )
+
+
+# ---------------------------------------------------------------------------
+# DELETE /remove-source/{session_id}/{source_id}
+# ---------------------------------------------------------------------------
+@router.delete(
+    "/remove-source/{session_id}/{source_id}",
+    response_model=RemoveSourceResponse,
+    summary="Oturumdan bir veri kaynağını kaldır",
+    description=(
+        "Birincil (ilk eklenen) kaynak kaldırılamaz. "
+        "Yalnızca sonradan eklenen kaynaklar kaldırılabilir."
+    ),
+    responses={
+        400: {"model": ErrorResponse, "description": "Birincil kaynak kaldırılamaz"},
+        404: {"model": ErrorResponse, "description": "Oturum veya kaynak bulunamadı"},
+    },
+)
+def remove_source(session_id: str, source_id: str) -> RemoveSourceResponse:
+    info = session_store.get_session_info(session_id)
+    if info is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Oturum bulunamadı veya süresi doldu.",
+        )
+
+    removed = session_store.remove_source(session_id, source_id)
+    if not removed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Kaynak kaldırılamadı. Birincil kaynak kaldırılamaz "
+                "veya source_id bulunamadı."
+            ),
+        )
+
+    updated_info = session_store.get_session_info(session_id)
+    sources = [
+        SourceEntry(
+            source_id=s["source_id"],
+            source_type=s["source_type"],
+            alias=s["alias"],
+        )
+        for s in (updated_info["sources"] if updated_info else [])
+    ]
+
+    logger.info(
+        "Kaynak kaldırıldı",
+        extra={"session_id": session_id, "source_id": source_id},
+    )
+
+    return RemoveSourceResponse(
+        ok=True,
+        session_id=session_id,
+        source_id=source_id,
+        message="Kaynak başarıyla kaldırıldı.",
+        sources=sources,
+    )
+
+
+# ---------------------------------------------------------------------------
+# GET /multi-schema/{session_id}
+# ---------------------------------------------------------------------------
+@router.get(
+    "/multi-schema/{session_id}",
+    response_model=MultiSourceSchemaResponse,
+    summary="Oturumdaki tüm kaynakların şemalarını getir",
+    description=(
+        "Session'a bağlı her veri kaynağının şema bilgisini tek yanıtta döndürür. "
+        "Frontend Merge panelindeki tablo seçim modalı bu endpoint'i kullanır."
+    ),
+    responses={
+        404: {"model": ErrorResponse, "description": "Oturum bulunamadı"},
+    },
+)
+def get_multi_schema(session_id: str) -> MultiSourceSchemaResponse:
+    all_sources = session_store.get_all_connectors(session_id)
+    if all_sources is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Oturum bulunamadı veya süresi doldu.",
+        )
+
+    results: list[dict] = []
+    for src in all_sources:
+        connector   = src["connector"]
+        source_type = src["source_type"]
+        entry: dict = {
+            "source_id":   src["source_id"],
+            "source_type": source_type,
+            "alias":       src["alias"],
+            "schema_text": "",
+            "tables":      [],
+            "collections": [],
+            "files":       [],
+            "error":       None,
+        }
+
+        try:
+            if source_type in ("postgresql", "mysql", "snowflake"):
+                schema_dict = connector.extract_schema()
+                entry["schema_text"] = connector.schema_to_prompt()
+                entry["tables"]      = schema_dict.get("tables", [])
+
+            elif source_type == "mongodb":
+                schema_dict = connector.extract_schema()
+                entry["schema_text"]  = connector.schema_to_prompt()
+                entry["collections"]  = schema_dict.get("collections", [])
+
+            elif source_type == "s3":
+                files = connector.list_data_files(max_keys=100)
+                entry["schema_text"] = _s3_files_to_schema_text(files)
+                entry["files"]       = files
+
+            else:
+                entry["error"] = f"Şema desteği olmayan kaynak tipi: {source_type}"
+
+        except Exception as exc:
+            logger.warning(
+                "Çoklu şema okuma hatası",
+                extra={
+                    "session_id": session_id,
+                    "source_id": src["source_id"],
+                    "error": str(exc),
+                },
+            )
+            entry["error"] = str(exc)
+
+        results.append(entry)
+
+    return MultiSourceSchemaResponse(session_id=session_id, sources=results)

@@ -157,6 +157,15 @@ class SQLExecutor:
             logger.error("Şema çıkarma hatası", extra={"error": str(exc)})
             return self._error_result("", "", f"Şema çıkarılamadı: {exc}")
 
+        # Şema boşsa LLM'e gönderme — sistem tablosu sorgulamasını önler
+        if not schema_text.strip() or not schema_dict.get("tables"):
+            logger.warning("Şema boş — sorgu üretilemiyor")
+            return self._error_result(
+                "", schema_text,
+                "Veritabanında tablo bulunamadı veya şema okunamadı. "
+                "Bağlantı bilgilerinizi ve kullanıcı yetkilerini kontrol edin."
+            )
+
         # 2. LLM ile SQL üret
         try:
             raw_response, generated_sql = self._generate_sql(
@@ -173,6 +182,7 @@ class SQLExecutor:
         # 3. Read-only sandbox doğrulaması
         try:
             _validate_read_only(generated_sql)
+            _validate_no_system_tables(generated_sql)
         except ValueError as exc:
             logger.warning(
                 "Güvensiz SQL engellendi",
@@ -234,7 +244,7 @@ class SQLExecutor:
 
         response = self._llm.invoke(messages)
         log_token_usage(response)
-        raw: str = response.content.strip()
+        raw: str = _extract_text_content(response.content)
         sql = _extract_sql(raw)
 
         logger.info("SQL üretildi", extra={"sql": sql})
@@ -263,6 +273,28 @@ class SQLExecutor:
 # ---------------------------------------------------------------------------
 # Yardımcı fonksiyonlar (modül düzeyinde — orchestrator'dan da çağrılabilir)
 # ---------------------------------------------------------------------------
+def _extract_text_content(content) -> str:
+    """
+    LLM response.content farklı formatlarda gelebilir:
+      - str                          → doğrudan döndür
+      - list[str]                    → birleştir
+      - list[dict]  (Gemini format)  → "text" alanlarını birleştir
+    """
+    if isinstance(content, str):
+        return content.strip()
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                parts.append(str(item.get("text", item)))
+            else:
+                parts.append(str(item))
+        return "".join(parts).strip()
+    return str(content).strip()
+
+
 def _extract_sql(llm_response: str) -> str:
     """
     LLM yanıtından SQL sorgusunu ayıklar.
@@ -273,6 +305,25 @@ def _extract_sql(llm_response: str) -> str:
         return match.group(1).strip()
     # Kod bloğu yoksa yanıtın kendisini döndür (gereksiz boşlukları temizle)
     return llm_response.strip()
+
+
+def _validate_no_system_tables(sql: str) -> None:
+    """
+    SQLite / PostgreSQL sistem tablolarına yönelik sorguları engeller.
+    LLM yanlış dialect seçtiğinde bu filtre devreye girer.
+    """
+    forbidden_patterns = re.compile(
+        r"\b(sqlite_master|sqlite_sequence|sqlite_stat\d*"
+        r"|pg_catalog|pg_tables|pg_class|pg_namespace"
+        r"|sysobjects|sys\.tables|sys\.columns"
+        r")\b",
+        re.IGNORECASE,
+    )
+    if forbidden_patterns.search(sql):
+        raise ValueError(
+            "Sistem tablosu sorgusu engellendi. "
+            "Yalnızca veritabanı şemasındaki tablolara sorgu yapılabilir."
+        )
 
 
 def _validate_read_only(sql: str) -> None:

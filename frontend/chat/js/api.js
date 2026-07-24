@@ -27,7 +27,6 @@ async function apiFetch(path, options = {}) {
   const data = await res.json();
 
   if (!res.ok) {
-    // FastAPI error format: { detail: "..." }
     const msg = data?.detail || `HTTP ${res.status}`;
     throw new Error(msg);
   }
@@ -67,7 +66,7 @@ async function apiConnect(payload) {
 
 /**
  * GET /connect-db/schema/{session_id}
- * Bağlı kaynağın şemasını getirir.
+ * Bağlı (birincil) kaynağın şemasını getirir.
  * @param {string} sessionId
  * @returns {Object}  SchemaResponse
  */
@@ -76,8 +75,49 @@ async function apiGetSchema(sessionId) {
 }
 
 /**
+ * GET /connect-db/multi-schema/{session_id}
+ * Session'daki TÜM kaynakların şemalarını tek seferde getirir.
+ * Her kaynak için tablo/koleksiyon listesi de döner.
+ * @param {string} sessionId
+ * @returns {Object}  MultiSourceSchemaResponse
+ *   { session_id, sources: [{ source_id, source_type, alias, schema_text, tables, collections, files, error }] }
+ */
+async function apiGetMultiSchema(sessionId) {
+  return apiFetch(`/connect-db/multi-schema/${encodeURIComponent(sessionId)}`);
+}
+
+/**
+ * POST /connect-db/add-source
+ * Mevcut bir oturuma yeni bir veri kaynağı ekler.
+ * @param {Object} payload  AddSourceRequest
+ *   { session_id, alias?, source_type, connection_url?, mongodb_uri?, ... }
+ * @returns {Object}  AddSourceResponse
+ *   { ok, session_id, source_id, source_type, alias, message, sources[] }
+ */
+async function apiAddSource(payload) {
+  return apiFetch("/connect-db/add-source", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/**
+ * DELETE /connect-db/remove-source/{session_id}/{source_id}
+ * Oturumdan bir veri kaynağını kaldırır (birincil kaynak kaldırılamaz).
+ * @param {string} sessionId
+ * @param {string} sourceId
+ * @returns {Object}  RemoveSourceResponse
+ */
+async function apiRemoveSource(sessionId, sourceId) {
+  return apiFetch(
+    `/connect-db/remove-source/${encodeURIComponent(sessionId)}/${encodeURIComponent(sourceId)}`,
+    { method: "DELETE" }
+  );
+}
+
+/**
  * DELETE /connect-db/disconnect/{session_id}
- * Oturumu kapatır.
+ * Oturumu tamamen kapatır.
  * @param {string} sessionId
  * @returns {Object}  DisconnectResponse
  */
@@ -94,14 +134,30 @@ async function apiDisconnect(sessionId) {
 /**
  * POST /chat/ask
  * Doğal dil sorusunu ajana gönderir.
- * @param {string} sessionId   Aktif session
- * @param {string} question    Kullanıcının sorusu
- * @returns {Object}           ChatResponse { status, summary, sql_query, chart_data, action_plan }
+ *
+ * Tek kaynak modu (sourceSelection boş):
+ *   apiAsk(sessionId, question)
+ *
+ * Çoklu kaynak modu (sourceSelection dolu):
+ *   apiAsk(sessionId, question, [
+ *     { source_id: "src_001", tables: ["orders"] },
+ *     { source_id: "src_002", tables: [] },        // tüm tablolar
+ *   ])
+ *
+ * @param {string}   sessionId       Aktif session
+ * @param {string}   question        Kullanıcının sorusu
+ * @param {Array}    [sourceSelection]  [{source_id, tables:[]}]
+ * @returns {Object} ChatResponse
+ *   { status, summary, sql_query, chart_data, action_plan, sources_queried }
  */
-async function apiAsk(sessionId, question) {
+async function apiAsk(sessionId, question, sourceSelection = []) {
   return apiFetch("/chat/ask", {
     method: "POST",
-    body: JSON.stringify({ session_id: sessionId, question }),
+    body: JSON.stringify({
+      session_id:       sessionId,
+      question,
+      source_selection: sourceSelection,
+    }),
   });
 }
 
@@ -110,12 +166,17 @@ async function apiAsk(sessionId, question) {
 ═══════════════════════════════════════════════════════════ */
 
 /**
- * Sidebar form alanlarından ConnectDbRequest payload'u üretir.
+ * Sidebar form alanlarından ConnectDbRequest / AddSourceRequest payload'u üretir.
+ *
+ * @param {string|null} [sessionId]  Verilirse AddSourceRequest formatında üretir.
+ * @param {string|null} [alias]      Kaynak için kullanıcı dostu ad.
  * @returns {Object}
  */
-function buildConnectPayload() {
+function buildConnectPayload(sessionId = null, alias = null) {
   const sourceType = document.getElementById("sourceType").value;
   const base = { source_type: sourceType };
+  if (sessionId) base.session_id = sessionId;
+  if (alias)     base.alias      = alias;
 
   switch (sourceType) {
     case "postgresql":

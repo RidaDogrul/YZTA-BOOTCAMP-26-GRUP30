@@ -16,59 +16,80 @@ from typing import Any
 from sqlalchemy import create_engine, inspect
 
 
-def extract_schema(db_url: str) -> dict[str, Any]:
+def extract_schema(db_url: str, schema_name: str | None = None) -> dict[str, Any]:
     """
     Verilen veritabanındaki tüm tabloların meta-verisini çıkarır.
 
     Args:
-        db_url: SQLAlchemy bağlantı adresi. Örnekler:
-                "postgresql+psycopg2://user:pass@localhost:5432/mydb"
-                "mysql+pymysql://user:pass@localhost:3306/mydb"
-                "sqlite:///./demo.db"
-
-    Returns:
-        Tabloları, sütunları ve ilişkileri içeren yapılandırılmış bir dict.
+        db_url: SQLAlchemy bağlantı adresi.
+        schema_name: Şema adı (Snowflake için zorunlu, diğerleri için opsiyonel).
     """
     engine = create_engine(db_url)
     inspector = inspect(engine)
+    dialect = engine.dialect.name  # "mysql", "postgresql", "sqlite", vb.
+
+    # MySQL: schema parametresi = veritabanı adı.
+    # None geçilince SQLite fallback query üretilir — bunu önle.
+    if dialect == "mysql" and schema_name is None:
+        # URL'den database adını çıkar: mysql+pymysql://user:pass@host:port/DATABASE
+        import re as _re
+        m = _re.search(r"/([^/?]+)(?:\?|$)", db_url.split("@")[-1])
+        schema_name = m.group(1) if m else None
+
+    # Snowflake: None string'ini engelle
+    effective_schema = (
+        schema_name
+        if schema_name and str(schema_name).lower() not in ("none", "null", "")
+        else None
+    )
 
     tables: list[dict[str, Any]] = []
 
-    for table_name in inspector.get_table_names():
-        # Birincil anahtar sütunlarını bir kümede topla (hızlı kontrol için)
-        pk_info = inspector.get_pk_constraint(table_name)
-        pk_columns = set(pk_info.get("constrained_columns", []))
+    try:
+        table_names = inspector.get_table_names(schema=effective_schema)
+    except Exception:
+        # schema parametresi sorun çıkardıysa None ile tekrar dene
+        try:
+            table_names = inspector.get_table_names(schema=None)
+        except Exception:
+            table_names = []
 
-        # --- Sütun bilgileri ---
-        columns: list[dict[str, Any]] = []
-        for col in inspector.get_columns(table_name):
-            columns.append(
+    for table_name in table_names:
+        try:
+            pk_info = inspector.get_pk_constraint(table_name, schema=effective_schema)
+            pk_columns = set(pk_info.get("constrained_columns", []))
+
+            columns: list[dict[str, Any]] = []
+            for col in inspector.get_columns(table_name, schema=effective_schema):
+                columns.append(
+                    {
+                        "name": col["name"],
+                        "type": str(col["type"]),
+                        "nullable": col.get("nullable", True),
+                        "primary_key": col["name"] in pk_columns,
+                    }
+                )
+
+            foreign_keys: list[dict[str, Any]] = []
+            for fk in inspector.get_foreign_keys(table_name, schema=effective_schema):
+                foreign_keys.append(
+                    {
+                        "columns": fk.get("constrained_columns", []),
+                        "references_table": fk.get("referred_table"),
+                        "references_columns": fk.get("referred_columns", []),
+                    }
+                )
+
+            tables.append(
                 {
-                    "name": col["name"],
-                    "type": str(col["type"]),       # örn: "VARCHAR(255)", "INTEGER"
-                    "nullable": col.get("nullable", True),
-                    "primary_key": col["name"] in pk_columns,
+                    "table_name": table_name,
+                    "columns": columns,
+                    "foreign_keys": foreign_keys,
                 }
             )
-
-        # --- Yabancı anahtar (FK) ilişkileri ---
-        foreign_keys: list[dict[str, Any]] = []
-        for fk in inspector.get_foreign_keys(table_name):
-            foreign_keys.append(
-                {
-                    "columns": fk.get("constrained_columns", []),
-                    "references_table": fk.get("referred_table"),
-                    "references_columns": fk.get("referred_columns", []),
-                }
-            )
-
-        tables.append(
-            {
-                "table_name": table_name,
-                "columns": columns,
-                "foreign_keys": foreign_keys,
-            }
-        )
+        except Exception:
+            # Tek tablo şema hatası tüm işlemi durdurmasın
+            tables.append({"table_name": table_name, "columns": [], "foreign_keys": []})
 
     engine.dispose()
     return {"tables": tables}

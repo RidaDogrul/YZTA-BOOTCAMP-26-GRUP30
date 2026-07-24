@@ -1,40 +1,47 @@
-/* ═══════════════════════════════════════════════════════════
-   Nexus Analytics — Vivid Color Theme
-   Renk paleti: Indigo, Turuncu, Sarı, Yeşil, Kırmızı, Mavi
-   ═══════════════════════════════════════════════════════════ */
+﻿/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   Nexus Analytics â€” Vivid Light Theme
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 :root {
-  /* ── Arka plan ─────────────────────────────────────── */
-  --bg:        #08090f;
-  --s1:        #0d0f1b;
-  --s2:        rgba(15,18,35,0.85);
-  --s3:        #151929;
-  --s4:        #1c2038;
-  --border:    rgba(255,255,255,.08);
-  --border2:   rgba(255,255,255,.15);
+  /* â”€â”€ Arka plan â€” daha aÃ§Ä±k, ferah â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  --bg:        #0f1117;
+  --s1:        #161b27;
+  --s2:        rgba(22,27,39,0.90);
+  --s3:        #1e2435;
+  --s4:        #252c40;
+  --border:    rgba(255,255,255,.10);
+  --border2:   rgba(255,255,255,.18);
 
-  /* ── Canlı marka renkleri ───────────────────────────── */
-  --indigo:    #6366f1;   /* primary */
+  /* â”€â”€ Kaynak tipi renkleri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  --src-pg:       #818cf8;   /* PostgreSQL â€” indigo */
+  --src-mysql:    #facc15;   /* MySQL      â€” sarÄ±   */
+  --src-mongo:    #4ade80;   /* MongoDB    â€” yeÅŸil  */
+  --src-s3:       #fb923c;   /* S3         â€” turuncu*/
+  --src-snow:     #38bdf8;   /* Snowflake  â€” mavi   */
+
+  /* â”€â”€ CanlÄ± marka renkleri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  --indigo:    #6366f1;
   --indigo2:   #818cf8;
-  --orange:    #f97316;   /* aksiyon / CTA */
+  --orange:    #f97316;
   --orange2:   #fb923c;
-  --yellow:    #eab308;   /* uyarı / vurgu */
+  --yellow:    #eab308;
   --yellow2:   #facc15;
-  --green:     #22c55e;   /* başarı / bağlı */
+  --green:     #22c55e;
   --green2:    #4ade80;
-  --red:       #ef4444;   /* hata */
+  --red:       #ef4444;
   --red2:      #f87171;
-  --blue:      #3b82f6;   /* bilgi */
+  --blue:      #3b82f6;
   --blue2:     #60a5fa;
   --teal:      #14b8a6;
   --purple:    #a855f7;
+  --cyan:      #06b6d4;
 
-  /* ── Metin ──────────────────────────────────────────── */
-  --t1:  #f1f5f9;
-  --t2:  #94a3b8;
-  --t3:  #475569;
+  /* â”€â”€ Metin â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  --t1:  #f0f4ff;
+  --t2:  #a0aec0;
+  --t3:  #5a6a85;
 
-  /* ── Layout ─────────────────────────────────────────── */
-  --sw:  300px;
+  /* â”€â”€ Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  --sw:  310px;
   --th:  56px;
   --r:   13px;
   --rs:  9px;
@@ -58,16 +65,16 @@ body {
 ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,.2) }
 .hidden { display:none!important }
 
-/* ── Ambient orbs ─────────────────────────────────────────── */
+/* â”€â”€ Ambient orbs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .bg-orb {
   position:fixed; border-radius:50%; pointer-events:none;
   filter:blur(90px); opacity:.14; z-index:0;
 }
-.orb-1 { width:550px; height:550px; background:var(--indigo); top:-180px; left:-140px }
-.orb-2 { width:420px; height:420px; background:var(--orange);  bottom:-120px; right:60px }
-.orb-3 { width:320px; height:320px; background:var(--teal);    top:55%; left:42%; transform:translate(-50%,-50%) }
+.orb-1 { width:600px; height:600px; background:var(--indigo); top:-200px; left:-160px; opacity:.12 }
+.orb-2 { width:450px; height:450px; background:var(--purple); bottom:-130px; right:40px; opacity:.10 }
+.orb-3 { width:350px; height:350px; background:var(--cyan);   top:55%; left:42%; transform:translate(-50%,-50%); opacity:.08 }
 
-/* ── SIDEBAR ──────────────────────────────────────────────── */
+/* â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .sidebar {
   position:relative; z-index:50;
   width:var(--sw); min-width:var(--sw);
@@ -137,14 +144,27 @@ body {
   padding:0 14px 10px;
 }
 .source-tab {
-  padding:4px 10px; border-radius:99px;
+  padding:5px 11px; border-radius:99px;
   border:1px solid var(--border); background:transparent;
-  font-family:var(--font); font-size:11px; font-weight:500;
+  font-family:var(--font); font-size:11px; font-weight:600;
   color:var(--t3); cursor:pointer;
-  transition:background var(--dur), color var(--dur), border-color var(--dur);
+  transition:background var(--dur), color var(--dur), border-color var(--dur), box-shadow var(--dur);
 }
 .source-tab:hover { background:var(--s3); color:var(--t2); border-color:var(--border2) }
-.source-tab.active { background:var(--indigo); color:#fff; border-color:var(--indigo) }
+
+/* Her kaynak tipi kendi rengiyle */
+.source-tab[data-src="postgresql"].active { background:var(--src-pg);   color:#fff; border-color:var(--src-pg);   box-shadow:0 0 12px rgba(129,140,248,.45) }
+.source-tab[data-src="mysql"].active      { background:var(--src-mysql); color:#111; border-color:var(--src-mysql); box-shadow:0 0 12px rgba(250,204,21,.45) }
+.source-tab[data-src="mongodb"].active    { background:var(--src-mongo); color:#111; border-color:var(--src-mongo); box-shadow:0 0 12px rgba(74,222,128,.45) }
+.source-tab[data-src="s3"].active         { background:var(--src-s3);    color:#fff; border-color:var(--src-s3);    box-shadow:0 0 12px rgba(251,146,60,.45) }
+.source-tab[data-src="snowflake"].active  { background:var(--src-snow);  color:#111; border-color:var(--src-snow);  box-shadow:0 0 12px rgba(56,189,248,.45) }
+
+/* Hover renk ipuÃ§larÄ± (baÄŸlÄ± deÄŸilken) */
+.source-tab[data-src="postgresql"]:not(.active):hover { color:var(--src-pg);    border-color:var(--src-pg) }
+.source-tab[data-src="mysql"]:not(.active):hover      { color:var(--src-mysql); border-color:var(--src-mysql) }
+.source-tab[data-src="mongodb"]:not(.active):hover    { color:var(--src-mongo); border-color:var(--src-mongo) }
+.source-tab[data-src="s3"]:not(.active):hover         { color:var(--src-s3);    border-color:var(--src-s3) }
+.source-tab[data-src="snowflake"]:not(.active):hover  { color:var(--src-snow);  border-color:var(--src-snow) }
 
 /* Field panels */
 .field-panels { flex:1 }
@@ -243,7 +263,7 @@ body {
   word-break:break-all;
 }
 
-/* ── MAIN ─────────────────────────────────────────────────── */
+/* â”€â”€ MAIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .main {
   flex:1; display:flex; flex-direction:column;
   height:100vh; overflow:hidden; min-width:0; position:relative; z-index:1;
@@ -263,7 +283,12 @@ body {
   border-radius:99px; display:none;
 }
 .topbar-badge.show { display:block }
-.topbar-badge.connected { background:rgba(34,197,94,.15); color:var(--green); border:1px solid rgba(34,197,94,.3) }
+.topbar-badge.connected          { background:rgba(34,197,94,.15);  color:var(--green);    border:1px solid rgba(34,197,94,.3) }
+.topbar-badge.connected.src-pg   { background:rgba(129,140,248,.15);color:var(--src-pg);   border-color:rgba(129,140,248,.3) }
+.topbar-badge.connected.src-mysql{ background:rgba(250,204,21,.12); color:var(--src-mysql);border-color:rgba(250,204,21,.3) }
+.topbar-badge.connected.src-mongo{ background:rgba(74,222,128,.12); color:var(--src-mongo);border-color:rgba(74,222,128,.3) }
+.topbar-badge.connected.src-s3   { background:rgba(251,146,60,.14); color:var(--src-s3);   border-color:rgba(251,146,60,.3) }
+.topbar-badge.connected.src-snow { background:rgba(56,189,248,.12); color:var(--src-snow); border-color:rgba(56,189,248,.3) }
 .topbar-right { display:flex; gap:4px }
 #menuBtn { display:none }
 
@@ -347,7 +372,7 @@ body {
   color:#fff; border-bottom-right-radius:3px;
 }
 .msg-row.agent .msg-text {
-  background:var(--s1); border:1px solid var(--border);
+  background:var(--s3); border:1px solid var(--border2);
   color:var(--t1); border-bottom-left-radius:3px;
 }
 /* Markdown inside agent bubble */
@@ -470,7 +495,7 @@ body {
 .proc-check { color:var(--green); font-size:13px }
 .proc-dot   { width:6px; height:6px; background:var(--border2); border-radius:50%; margin:auto }
 
-/* ── INPUT BAR ───────────────────────────────────────────── */
+/* â”€â”€ INPUT BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .input-bar {
   flex-shrink:0; padding:10px 20px 14px;
   background:rgba(13,15,26,.9); backdrop-filter:blur(10px);
@@ -506,7 +531,7 @@ body {
   font-size:11px; color:var(--t3); text-align:center; margin-top:6px;
 }
 
-/* ── TOASTS ──────────────────────────────────────────────── */
+/* â”€â”€ TOASTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .toast-stack {
   position:fixed; bottom:22px; right:22px; z-index:9999;
   display:flex; flex-direction:column; gap:8px; pointer-events:none;
@@ -533,7 +558,102 @@ body {
 .toast-title   { font-weight:700; margin-bottom:2px }
 .toast-msg     { color:var(--t2); font-size:12px }
 
-/* ── RESPONSIVE ──────────────────────────────────────────── */
+/* â”€â”€ BirleÅŸtir + Arama paneli â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+.merge-bar {
+  display:none; flex-direction:column; gap:6px;
+  margin:6px 14px 0; padding:10px 12px;
+  background:var(--s2); border:1px solid var(--border2);
+  border-radius:var(--rs);
+  border-left:3px solid var(--orange);
+}
+.merge-bar.visible { display:flex }
+.merge-bar-title {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.6px; color:var(--orange2); margin-bottom:2px;
+}
+.merge-bar-chips {
+  display:flex; flex-wrap:wrap; gap:4px;
+}
+.merge-chip {
+  display:flex; align-items:center; gap:5px;
+  padding:3px 9px; border-radius:99px;
+  font-size:11px; font-weight:600; cursor:pointer;
+  border:1px solid transparent;
+  transition:opacity var(--dur), box-shadow var(--dur);
+}
+.merge-chip.pg    { background:rgba(129,140,248,.15); color:var(--src-pg);    border-color:rgba(129,140,248,.3) }
+.merge-chip.mysql { background:rgba(250,204,21,.12);  color:var(--src-mysql); border-color:rgba(250,204,21,.3) }
+.merge-chip.mongo { background:rgba(74,222,128,.12);  color:var(--src-mongo); border-color:rgba(74,222,128,.3) }
+.merge-chip.s3    { background:rgba(251,146,60,.14);  color:var(--src-s3);    border-color:rgba(251,146,60,.3) }
+.merge-chip.snow  { background:rgba(56,189,248,.12);  color:var(--src-snow);  border-color:rgba(56,189,248,.3) }
+.merge-chip.selected { box-shadow:0 0 0 2px currentColor }
+.merge-chip .chip-x { font-size:10px; opacity:.6 }
+.merge-chip .chip-x:hover { opacity:1 }
+
+.merge-actions { display:flex; gap:6px; margin-top:2px }
+.btn-merge {
+  flex:1; padding:7px 10px; border-radius:var(--rx);
+  background:linear-gradient(135deg,var(--orange),var(--yellow));
+  border:none; color:#111; font-family:var(--font);
+  font-size:12px; font-weight:700; cursor:pointer;
+  transition:opacity var(--dur), transform 80ms;
+}
+.btn-merge:hover { opacity:.9 }
+.btn-merge:active { transform:scale(.98) }
+.btn-merge:disabled { opacity:.4; cursor:not-allowed }
+
+/* Veri arama kutusu */
+.data-search-wrap {
+  position:relative; display:none;
+  margin:4px 14px 0;
+}
+.data-search-wrap.visible { display:block }
+.data-search-input {
+  width:100%; padding:7px 32px 7px 10px;
+  background:var(--s3); border:1px solid var(--border2);
+  border-radius:var(--rx); color:var(--t1);
+  font-family:var(--font); font-size:12px; outline:none;
+  transition:border-color var(--dur);
+}
+.data-search-input:focus { border-color:var(--cyan) }
+.data-search-input::placeholder { color:var(--t3) }
+.data-search-icon {
+  position:absolute; right:8px; top:50%; transform:translateY(-50%);
+  font-size:13px; pointer-events:none;
+}
+.data-search-results {
+  position:absolute; left:0; right:0; top:100%; margin-top:4px;
+  background:var(--s3); border:1px solid var(--border2);
+  border-radius:var(--rs); z-index:200;
+  max-height:180px; overflow-y:auto;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+  display:none;
+}
+.data-search-results.open { display:block }
+.dsr-item {
+  padding:8px 12px; font-size:12px; color:var(--t2);
+  cursor:pointer; border-bottom:1px solid var(--border);
+  transition:background var(--dur), color var(--dur);
+}
+.dsr-item:last-child { border-bottom:none }
+.dsr-item:hover { background:var(--s4); color:var(--t1) }
+.dsr-item mark { background:rgba(251,146,60,.3); color:var(--orange2); border-radius:2px }
+.dsr-empty { padding:10px 12px; font-size:12px; color:var(--t3); text-align:center }
+
+/* Topbar clear-chat button */
+.btn-clear-chat {
+  display:flex; align-items:center; gap:5px;
+  padding:5px 10px; border-radius:var(--rx);
+  background:transparent; border:1px solid var(--border2);
+  color:var(--t3); font-family:var(--font);
+  font-size:12px; font-weight:500; cursor:pointer;
+  transition:background var(--dur), color var(--dur), border-color var(--dur);
+  white-space:nowrap;
+}
+.btn-clear-chat:hover { background:rgba(239,68,68,.1); color:var(--red2); border-color:var(--red) }
+.btn-clear-chat svg { width:14px; height:14px; flex-shrink:0 }
+
+/* â”€â”€ RESPONSIVE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 @media (max-width:768px) {
   .sidebar {
     position:fixed; top:0; left:0; height:100%;
@@ -546,3 +666,316 @@ body {
   .toast-stack { bottom:76px; right:12px; left:12px }
   .toast { min-width:unset; max-width:100% }
 }
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+
+
+/* ═══════════════════════════════════════════════════════════
+   Multi-source Merge Panel — Inline Accordion
+═══════════════════════════════════════════════════════════ */
+
+/* Merge bar container — turuncu tema */
+.merge-bar {
+  display:none; flex-direction:column; gap:6px;
+  margin:6px 14px 0; padding:10px 12px 12px;
+  background:rgba(249,115,22,.06);
+  border:1px solid rgba(249,115,22,.22);
+  border-radius:var(--rs);
+  border-left:3px solid var(--orange);
+}
+.merge-bar.visible { display:flex; }
+.merge-bar-title {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.6px; color:var(--orange2); margin-bottom:0;
+}
+.merge-bar-hint {
+  font-size:11px; color:var(--t3); line-height:1.5; margin:0 0 4px;
+}
+.merge-bar-hint strong { color:var(--orange2); font-weight:600; }
+
+/* ── Kaynak kart (accordion) — mavi ──────────────────── */
+.msrc-card {
+  border:1px solid var(--border);
+  border-radius:var(--rs);
+  background:var(--s3);
+  overflow:hidden;
+  transition:border-color var(--dur);
+}
+.msrc-card.expanded {
+  border-color:var(--border2);
+  background:var(--s3);
+}
+
+/* Header satırı */
+.msrc-header {
+  display:flex; align-items:center; gap:6px;
+  padding:7px 8px; cursor:default;
+}
+
+/* Chevron toggle butonu */
+.msrc-toggle {
+  width:20px; height:20px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:none; cursor:pointer;
+  color:var(--t3); border-radius:4px;
+  transition:color var(--dur), background var(--dur);
+}
+.msrc-toggle:hover { background:var(--s4); color:var(--t1); }
+.msrc-chevron {
+  width:10px; height:10px;
+  transition:transform var(--dur) var(--ease);
+}
+.msrc-card.expanded .msrc-chevron { transform:rotate(180deg); }
+
+/* Kaynak tipi badge */
+.merge-src-badge {
+  font-size:10px; font-weight:600; padding:2px 7px;
+  border-radius:99px; white-space:nowrap; flex-shrink:0;
+}
+.src-pg    { background:rgba(129,140,248,.18); color:var(--src-pg); }
+.src-mysql { background:rgba(250,204,21,.18);  color:var(--src-mysql); }
+.src-mongo { background:rgba(74,222,128,.18);  color:var(--src-mongo); }
+.src-s3    { background:rgba(251,146,60,.18);  color:var(--src-s3); }
+.src-snow  { background:rgba(56,189,248,.18);  color:var(--src-snow); }
+
+/* Alias */
+.msrc-alias {
+  font-size:12px; font-weight:500; color:var(--t1);
+  flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+
+/* Seçim sayacı */
+.msrc-sel-count {
+  font-size:10px; color:var(--t3); white-space:nowrap;
+  padding:1px 6px; border-radius:99px;
+  background:var(--s4); border:1px solid var(--border);
+  transition:background var(--dur), color var(--dur), border-color var(--dur);
+}
+.msrc-sel-count.has-sel {
+  background:rgba(99,102,241,.15);
+  color:var(--indigo2);
+  border-color:rgba(99,102,241,.35);
+}
+
+/* Kaldır butonu */
+.msrc-remove {
+  width:20px; height:20px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:none; border:1px solid var(--border); border-radius:4px;
+  cursor:pointer; color:var(--t3);
+  transition:background var(--dur), color var(--dur), border-color var(--dur);
+}
+.msrc-remove:hover {
+  background:rgba(239,68,68,.15); color:var(--red2); border-color:rgba(239,68,68,.4);
+}
+.msrc-remove svg { width:8px; height:8px; }
+
+/* ── Accordion body ───────────────────────────────────── */
+.msrc-body {
+  border-top:1px solid var(--border);
+  padding:8px;
+}
+
+.msrc-loading {
+  display:flex; align-items:center; gap:8px;
+  font-size:11px; color:var(--t3); padding:6px 2px;
+}
+
+.msrc-empty { font-size:11px; color:var(--t3); padding:4px 2px; }
+.msrc-error { font-size:11px; color:var(--red2); padding:4px 2px; }
+
+/* Toolbar (Tümünü Seç / Temizle) */
+.msrc-toolbar {
+  display:flex; gap:6px; margin-bottom:6px;
+}
+.msrc-sel-all, .msrc-sel-none {
+  font-size:10px; padding:3px 9px; border-radius:var(--rx);
+  border:1px solid var(--border); background:var(--s4);
+  color:var(--t2); cursor:pointer;
+  transition:background var(--dur), color var(--dur);
+  font-family:var(--font);
+}
+.msrc-sel-all:hover  { background:var(--s3); color:var(--indigo2); border-color:var(--indigo); }
+.msrc-sel-none:hover { background:var(--s3); color:var(--t1); }
+
+/* Tablo satırları */
+.msrc-table-list {
+  display:flex; flex-direction:column; gap:2px;
+  max-height:180px; overflow-y:auto;
+  padding-right:2px;
+}
+.msrc-table-row {
+  display:flex; align-items:center; gap:8px;
+  padding:5px 7px; border-radius:var(--rx);
+  cursor:pointer; border:1px solid transparent;
+  transition:background var(--dur), border-color var(--dur);
+  user-select:none;
+}
+.msrc-table-row:hover { background:var(--s4); }
+.msrc-table-row.checked {
+  background:rgba(99,102,241,.10);
+  border-color:rgba(99,102,241,.30);
+}
+.msrc-table-row input[type=checkbox] { display:none; }
+
+/* Custom checkbox box */
+.msrc-cb-box {
+  width:14px; height:14px; flex-shrink:0;
+  border:1.5px solid var(--border2); border-radius:3px;
+  display:flex; align-items:center; justify-content:center;
+  transition:background var(--dur), border-color var(--dur);
+  background:var(--s3);
+}
+.msrc-table-row.checked .msrc-cb-box {
+  background:var(--indigo); border-color:var(--indigo);
+}
+.msrc-table-row.checked .msrc-cb-box::after {
+  content:""; display:block;
+  width:4px; height:7px;
+  border:1.5px solid #fff; border-top:none; border-left:none;
+  transform:rotate(45deg) translate(-1px,-1px);
+}
+
+/* Tablo adı */
+.msrc-table-name {
+  font-size:11.5px; font-family:var(--mono); color:var(--t1);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;
+}
+
+/* ── Kaynak Ekle butonu ───────────────────────────────── */
+.btn-add-source {
+  display:flex; align-items:center; gap:6px; width:100%;
+  padding:7px 10px; border-radius:var(--rs);
+  border:1px dashed var(--border2); background:transparent;
+  color:var(--t2); font-size:12px; cursor:pointer;
+  font-family:var(--font);
+  transition:background var(--dur), color var(--dur), border-color var(--dur);
+}
+.btn-add-source:hover { background:var(--s4); color:var(--t1); border-color:var(--indigo); }
+.btn-add-source:disabled { opacity:.4; cursor:not-allowed; }
+
+/* ── Kaynak ekleme formu — mavi ───────────────────────── */
+.add-source-form {
+  display:none; flex-direction:column; gap:8px;
+  padding:10px 10px 12px;
+  background:rgba(99,102,241,.06);
+  border:1px solid rgba(99,102,241,.25);
+  border-radius:var(--rs);
+}
+.add-source-form.visible { display:flex; }
+.add-source-form-title {
+  font-size:11px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.5px; color:var(--indigo2);
+}
+
+/* Adım göstergesi */
+.add-source-step {
+  display:flex; align-items:flex-start; gap:8px;
+  font-size:11px; color:var(--t2); line-height:1.45;
+}
+.add-source-step-num {
+  flex-shrink:0; width:16px; height:16px;
+  border-radius:50%; background:var(--indigo);
+  color:#fff; font-size:9px; font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  margin-top:1px;
+}
+
+.add-source-form-row {
+  display:flex; gap:6px; margin-top:2px;
+}
+.btn-add-source-confirm {
+  display:flex; align-items:center; gap:5px;
+  flex:1; padding:7px; border-radius:var(--rx);
+  background:var(--indigo); color:#fff; border:none;
+  font-size:12px; font-weight:600; cursor:pointer;
+  font-family:var(--font);
+  transition:opacity var(--dur), box-shadow var(--dur);
+}
+.btn-add-source-confirm:hover { opacity:.88; box-shadow:0 0 14px rgba(99,102,241,.4); }
+.btn-add-source-confirm:disabled { opacity:.4; }
+.btn-add-source-cancel {
+  padding:7px 12px; border-radius:var(--rx);
+  background:var(--s4); color:var(--t2);
+  border:1px solid var(--border); font-size:12px;
+  cursor:pointer; font-family:var(--font);
+  transition:background var(--dur), color var(--dur);
+}
+.btn-add-source-cancel:hover { background:var(--s3); color:var(--t1); }
+
+/* ── Birleştirerek Sorgula — mavi/indigo gradient ─────── */
+.btn-run-merge {
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  width:100%; padding:8px; border-radius:var(--rs);
+  background:linear-gradient(135deg, var(--indigo), var(--purple));
+  color:#fff; font-size:12px; font-weight:600; border:none;
+  cursor:pointer; font-family:var(--font);
+  transition:opacity var(--dur), box-shadow var(--dur);
+}
+.btn-run-merge:hover:not(:disabled) {
+  opacity:.88; box-shadow:0 0 18px rgba(99,102,241,.4);
+}
+.btn-run-merge:disabled { opacity:.32; cursor:not-allowed; }
+
+
+/* ── Add-Source Form: type picker & inline fields ─────── */
+.asf-type-label {
+  font-size:10px; font-weight:700; text-transform:uppercase;
+  letter-spacing:.5px; color:var(--t3); margin-bottom:4px;
+}
+
+/* Kaynak tipi buton grubu */
+.asf-type-picker {
+  display:flex; flex-wrap:wrap; gap:4px; margin-bottom:8px;
+}
+.asf-type-btn {
+  padding:4px 10px; border-radius:99px; border:1px solid var(--border);
+  background:var(--s4); font-family:var(--font); font-size:11px;
+  font-weight:600; cursor:pointer; color:var(--t2);
+  transition:background var(--dur), color var(--dur),
+             border-color var(--dur), box-shadow var(--dur);
+}
+.asf-type-btn:hover { background:var(--s3); color:var(--t1); }
+
+/* Aktif seçim — her tip kendi rengiyle vurgulanır */
+.asf-type-btn.pg.active    { background:rgba(129,140,248,.2); color:var(--src-pg);    border-color:var(--src-pg);    box-shadow:0 0 10px rgba(129,140,248,.35); }
+.asf-type-btn.mysql.active { background:rgba(250,204,21,.15); color:var(--src-mysql); border-color:var(--src-mysql); box-shadow:0 0 10px rgba(250,204,21,.3); }
+.asf-type-btn.mongo.active { background:rgba(74,222,128,.15); color:var(--src-mongo); border-color:var(--src-mongo); box-shadow:0 0 10px rgba(74,222,128,.3); }
+.asf-type-btn.s3.active    { background:rgba(251,146,60,.15); color:var(--src-s3);    border-color:var(--src-s3);    box-shadow:0 0 10px rgba(251,146,60,.3); }
+.asf-type-btn.snow.active  { background:rgba(56,189,248,.14); color:var(--src-snow);  border-color:var(--src-snow);  box-shadow:0 0 10px rgba(56,189,248,.3); }
+/* Kaynak tipi yok mesajı */
+.asf-no-types {
+  font-size:11px; color:var(--t3);
+  padding:4px 0; margin:0;
+}
+
+/* Dinamik alan paneli */
+.asf-fields-wrap {
+  display:flex; flex-direction:column; gap:6px;
+  margin-bottom:6px;
+}
+
+/* İki sütunlu satır (Snowflake için) */
+.asf-row {
+  display:flex; gap:6px;
+}
+.asf-row .field-group { flex:1; }
+
+
+/* ── Dil Değiştirici (TR / EN) ───────────────────────── */
+.lang-toggle {
+  display:flex; align-items:center; gap:0;
+  border:1px solid var(--border2); border-radius:99px;
+  overflow:hidden; flex-shrink:0;
+}
+.lang-btn {
+  padding:3px 9px; font-size:11px; font-weight:600;
+  background:transparent; border:none; cursor:pointer;
+  color:var(--t3); font-family:var(--font);
+  transition:background var(--dur), color var(--dur);
+  letter-spacing:.3px;
+}
+.lang-btn.active {
+  background:var(--orange); color:#fff;
+}
+.lang-btn:not(.active):hover { background:var(--s3); color:var(--t1); }
