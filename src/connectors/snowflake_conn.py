@@ -23,8 +23,6 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
-from src.connectors.schema_extractor import extract_schema, schema_to_prompt_string
-
 
 def _extract_snowflake_schema(engine: "Engine", database: str, schema: str) -> dict:
     """
@@ -34,7 +32,6 @@ def _extract_snowflake_schema(engine: "Engine", database: str, schema: str) -> d
     (örn: SNOWFLAKE_SAMPLE_DATA) yetki hatası verir.
     Bu fonksiyon doğrudan SQL sorgusuyla aynı bilgiyi güvenli şekilde alır.
     """
-    from typing import Any
 
     sql = text("""
         SELECT
