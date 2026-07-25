@@ -18,6 +18,8 @@ pandas
 
 
 pymysql
+openpyxl
+xlrd
 snowflake-sqlalchemy
 pre-commit
 
