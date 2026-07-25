@@ -25,6 +25,96 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from src.connectors.schema_extractor import extract_schema, schema_to_prompt_string
 
+
+def _extract_snowflake_schema(engine: "Engine", database: str, schema: str) -> dict:
+    """
+    Snowflake INFORMATION_SCHEMA.COLUMNS üzerinden şema çıkarır.
+
+    Inspector'ın kullandığı SHOW TABLES bazı veritabanlarında
+    (örn: SNOWFLAKE_SAMPLE_DATA) yetki hatası verir.
+    Bu fonksiyon doğrudan SQL sorgusuyla aynı bilgiyi güvenli şekilde alır.
+    """
+    from typing import Any
+
+    sql = text("""
+        SELECT
+            c.TABLE_NAME,
+            c.COLUMN_NAME,
+            c.DATA_TYPE,
+            c.IS_NULLABLE,
+            CASE WHEN kcu.COLUMN_NAME IS NOT NULL THEN 'YES' ELSE 'NO' END AS IS_PRIMARY_KEY
+        FROM
+            INFORMATION_SCHEMA.COLUMNS c
+            LEFT JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                ON  tc.TABLE_SCHEMA   = c.TABLE_SCHEMA
+                AND tc.TABLE_NAME     = c.TABLE_NAME
+                AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+            LEFT JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                ON  kcu.CONSTRAINT_NAME = tc.CONSTRAINT_NAME
+                AND kcu.TABLE_SCHEMA    = c.TABLE_SCHEMA
+                AND kcu.TABLE_NAME      = c.TABLE_NAME
+                AND kcu.COLUMN_NAME     = c.COLUMN_NAME
+        WHERE
+            c.TABLE_SCHEMA = :schema
+        ORDER BY
+            c.TABLE_NAME, c.ORDINAL_POSITION
+    """)
+
+    rows: list[Any] = []
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(sql, {"schema": schema.upper()})
+            rows = result.fetchall()
+    except Exception:
+        # INFORMATION_SCHEMA de erişilemiyorsa SHOW COLUMNS ile dene
+        rows = _snowflake_show_columns(engine, database, schema)
+
+    # Satırları tablo bazında grupla
+    tables: dict[str, dict] = {}
+    for row in rows:
+        tname     = str(row[0])
+        col_name  = str(row[1])
+        col_type  = str(row[2])
+        nullable  = str(row[3]).upper() != "NO"
+        is_pk     = str(row[4]).upper() == "YES"
+
+        if tname not in tables:
+            tables[tname] = {"table_name": tname, "columns": [], "foreign_keys": []}
+        tables[tname]["columns"].append({
+            "name": col_name,
+            "type": col_type,
+            "nullable": nullable,
+            "primary_key": is_pk,
+        })
+
+    return {"tables": list(tables.values())}
+
+
+def _snowflake_show_columns(engine: "Engine", database: str, schema: str) -> list:
+    """SHOW COLUMNS fallback — bazı Snowflake şemalarında INFORMATION_SCHEMA kısıtlı."""
+    with engine.connect() as conn:
+        result = conn.execute(
+            text(f"SHOW COLUMNS IN SCHEMA \"{database}\".\"{schema}\"")
+        )
+        rows = result.fetchall()
+
+    # SHOW COLUMNS çıktısı: column_name, data_type, table_name, ...
+    # Her satır sözlük benzeri erişimi destekler
+    mapped: list = []
+    for row in rows:
+        try:
+            r = dict(row._mapping)
+            mapped.append((
+                r.get("table_name", ""),
+                r.get("column_name", ""),
+                r.get("data_type", ""),
+                "YES",   # nullable bilinmiyor → YES kabul et
+                "NO",    # PK bilinmiyor
+            ))
+        except Exception:
+            pass
+    return mapped
+
 # Yalnızca okuma amaçlı sorgulara izin verilir.
 _FORBIDDEN_SQL = re.compile(
     r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|CREATE|GRANT|REVOKE)\b",
@@ -46,6 +136,14 @@ class SnowflakeConfig(BaseModel):
         default="PUBLIC",
         description="Veritabanı şema adı",
     )
+
+    @field_validator("schema_name", mode="before")
+    @classmethod
+    def _default_schema(cls, v: object) -> str:
+        """None veya boş string gelirse PUBLIC kullan."""
+        if not v or str(v).strip().lower() in ("", "none", "null"):
+            return "PUBLIC"
+        return str(v).strip()
     warehouse: str | None = Field(
         default=None,
         description="Sorgu çalıştırılacak sanal depo (warehouse)",
@@ -65,9 +163,11 @@ class SnowflakeConfig(BaseModel):
     def to_url(self) -> str:
         """SQLAlchemy bağlantı adresini üretir."""
         password = self.password.get_secret_value()
+        # schema_name None/boş olmamalı — validator bunu zaten engelliyor ama defense-in-depth
+        schema = self.schema_name or "PUBLIC"
         url = (
             f"snowflake://{self.user}:{password}"
-            f"@{self.account}/{self.database}/{self.schema_name}"
+            f"@{self.account}/{self.database}/{schema}"
         )
         params: list[str] = []
         if self.warehouse:
@@ -212,16 +312,20 @@ class SnowflakeConnector:
         """
         Snowflake şemasındaki tabloların meta-verisini çıkarır.
 
-        schema_extractor SQLAlchemy Inspector'ı kullandığından
-        snowflake-sqlalchemy dialect desteğiyle çalışır.
+        SQLAlchemy Inspector yerine doğrudan SQL kullanır:
+        - Inspector'ın SHOW TABLES komutu bazı veritabanlarında çalışmaz
+          (örn: SNOWFLAKE_SAMPLE_DATA).
+        - INFORMATION_SCHEMA.COLUMNS sorgusunu tercih ederiz.
         """
+        schema = self.config.schema_name or "PUBLIC"
         try:
-            return extract_schema(self.db_url)
-        except SQLAlchemyError as exc:
+            return _extract_snowflake_schema(self.connect(), self.config.database, schema)
+        except Exception as exc:
             raise RuntimeError(f"Şema çıkarılamadı: {exc}") from exc
 
     def schema_to_prompt(self) -> str:
         """LLM prompt'u için okunaklı şema metni üretir."""
+        from src.connectors.schema_extractor import schema_to_prompt_string
         return schema_to_prompt_string(self.extract_schema())
 
     @staticmethod

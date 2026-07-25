@@ -50,9 +50,12 @@ def get_llm():
     """
     Yapılandırılmış Gemini modelini döndürür.
     temperature=0 -> tutarlı, tekrarlanabilir cevaplar (SQL üretimi için ideal).
+
+
     """
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
     return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
+        model=model,
         google_api_key=os.getenv("GOOGLE_API_KEY"),
         temperature=0,
     )
