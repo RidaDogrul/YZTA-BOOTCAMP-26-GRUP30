@@ -13,6 +13,11 @@ from src.api.middleware.auth import CurrentUser, get_current_user
 from src.api.v1.schemas.common import ErrorResponse
 from src.api.v1.schemas.reports import ReportListResponse, ReportResponse, ReportSummary
 
+from fastapi import Response
+
+from src.api.v1.schemas.export import ReportExportRequest
+from src.services.report_exporter import export_report as build_export
+
 router = APIRouter()
 
 
@@ -79,4 +84,54 @@ def get_report(
         summary="Şablon rapor — gerçek veri Sprint 3'te eklenecek.",
         chart_data=[{"date": "2026-07-01", "predicted_sales": 12000}],
         action_plan=["Örnek aksiyon maddesi."],
+    )
+
+
+
+
+
+@router.post(
+    "/export",
+    summary="Raporu PDF veya Excel olarak indir",
+    description=(
+        "Gönderilen rapor içeriğini PDF ya da Excel dosyasına çevirir ve indirir. "
+        "Raporlar sunucuda saklanmadığı için içerik istek gövdesinde gönderilir; "
+        "frontend ekrandaki raporu doğrudan iletebilir."
+    ),
+    response_description="İndirilebilir dosya (PDF veya XLSX).",
+    responses={
+        200: {
+            "content": {
+                "application/pdf": {},
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {},
+            },
+            "description": "Rapor dosyası",
+        },
+        400: {"model": ErrorResponse, "description": "Geçersiz format"},
+        500: {"model": ErrorResponse, "description": "Rapor oluşturulamadı"},
+    },
+)
+def export_report_endpoint(
+    payload: ReportExportRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> Response:
+    """Rapor içeriğini istenen dosya biçiminde döndürür."""
+    try:
+        content, filename, media_type = build_export(
+            payload.model_dump(), payload.format
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+    except Exception as exc:  
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Rapor dosyası oluşturulamadı.",
+        ) from exc
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
