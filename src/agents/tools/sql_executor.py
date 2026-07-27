@@ -233,15 +233,12 @@ class SQLExecutor:
         Returns:
             (ham_yanıt, temizlenmiş_sql)
         """
-<<<<<<< HEAD
         # Validate inputs
         if not question or not question.strip():
             raise ValueError("Soru boş olamaz.")
         if not schema_text or not schema_text.strip():
             raise ValueError("Şema boş olamaz.")
         
-=======
->>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         system_content = SQL_EXECUTOR_SYSTEM_PROMPT.format(schema=schema_text)
         if self._config.extra_instructions:
             system_content += f"\n\nEK TALİMATLAR:\n{self._config.extra_instructions}"
@@ -251,7 +248,6 @@ class SQLExecutor:
             HumanMessage(content=question),
         ]
 
-<<<<<<< HEAD
         try:
             response = self._llm.invoke(messages)
             log_token_usage(response)
@@ -270,15 +266,6 @@ class SQLExecutor:
         except Exception as exc:
             logger.error("LLM çağrısı hatası", extra={"error": str(exc), "question": question[:100]})
             raise
-=======
-        response = self._llm.invoke(messages)
-        log_token_usage(response)
-        raw: str = _extract_text_content(response.content)
-        sql = _extract_sql(raw)
-
-        logger.info("SQL üretildi", extra={"sql": sql})
-        return raw, sql
->>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 
     # ------------------------------------------------------------------
     # Yardımcılar
