@@ -178,7 +178,7 @@ bilgiyi LLM'in kolayca okuyabileceği temiz bir yapıya dönüştürür.
 Bu modülün çıktısı, daha önce yazdığın prompts.py içindeki
 SQL_EXECUTOR_SYSTEM_PROMPT'un {schema} alanını dolduracak.
 """
-from __future__ import annotations
+
 
 import json
 from typing import Any
