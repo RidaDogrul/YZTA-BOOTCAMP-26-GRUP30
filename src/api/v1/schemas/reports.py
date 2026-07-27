@@ -4,6 +4,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+<<<<<<< HEAD
 class GenerateReportRequest(BaseModel):
     """Rapor oluşturma isteği."""
 
@@ -15,6 +16,8 @@ class GenerateReportRequest(BaseModel):
     make_public: bool = Field(default=False, description="Raporun herkese açık olup olmadığı")
 
 
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 class ReportSummary(BaseModel):
     """Rapor listesinde gösterilen özet kart."""
 

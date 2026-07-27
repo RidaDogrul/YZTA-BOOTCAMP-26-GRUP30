@@ -6,16 +6,20 @@ FS Notları:
 - `/reports/{report_id}` ile detay sayfası açılır.
 - Rapor içeriği chat yanıtıyla aynı JSON yapısını kullanır (tutarlı frontend modeli).
 """
+<<<<<<< HEAD
 from __future__ import annotations
 
 import uuid
 from datetime import datetime
 from typing import Any
 
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 from fastapi import APIRouter, HTTPException, status
 from fastapi import Depends
 from src.api.middleware.auth import CurrentUser, get_current_user
 
+<<<<<<< HEAD
 from src.agents.insight_generator import InsightGeneratorAgent
 from src.agents.orchestrator import Orchestrator
 from src.api.v1.schemas.chat import ChatResponse
@@ -36,6 +40,13 @@ router = APIRouter()
 # Format: {report_id: {"report_id": str, "user_id": str, "created_at": str, "content": dict, "share_with_emails": list[str], "make_public": bool, "public_link": str}}
 report_store: dict[str, dict[str, Any]] = {}
 
+=======
+from src.api.v1.schemas.common import ErrorResponse
+from src.api.v1.schemas.reports import ReportListResponse, ReportResponse, ReportSummary
+
+router = APIRouter()
+
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 
 @router.get(
     "",
@@ -101,6 +112,7 @@ def get_report(
         chart_data=[{"date": "2026-07-01", "predicted_sales": 12000}],
         action_plan=["Örnek aksiyon maddesi."],
     )
+<<<<<<< HEAD
 
 
 @router.post(
@@ -353,3 +365,5 @@ def get_public_report(report_id: str) -> ChatResponse:
     
     logger.info(f"Returning public report: {report_id}")
     return ChatResponse(**report_data["content"])
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
