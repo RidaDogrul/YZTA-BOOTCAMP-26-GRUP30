@@ -136,7 +136,7 @@ OUTPUT: Return ONLY the JSON below. No markdown, no explanation, no code fences.
 LangChain ajanları için system prompt şablonları.
 Sprint 2'de Orchestrator bu prompt'ları kullanarak üç ajanı
 (SQL Executor, Data Scientist, Insight Generator) oluşturacak.
-"""
+
 
 SQL_EXECUTOR_SYSTEM_PROMPT = """Sen bir SQL uzmanı ajansın.
 
