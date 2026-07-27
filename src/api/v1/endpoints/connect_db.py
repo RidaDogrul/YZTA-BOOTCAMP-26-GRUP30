@@ -376,8 +376,8 @@ def _get_active_connector(session_id: str) -> tuple[BaseConnector, str]:
             detail="Oturum bulunamadı veya süresi doldu.",
         )
     info = session_store.get_session_info(session_id)
-    source_type = info["source_type"] if info else "unknown"
-    return connector, source_type
+    source_type = str(info["source_type"]) if info else "unknown"
+    return cast(BaseConnector, connector), source_type
 
 
 def _build_connect_message(source_type: str, result: dict) -> str:
