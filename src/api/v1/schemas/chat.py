@@ -36,6 +36,7 @@ class ChatRequest(BaseModel):
         min_length=3,
         examples=["Önümüzdeki ay en çok satış yapılacak kategori hangisi?"],
     )
+<<<<<<< HEAD
     language: str | None = Field(
         default=None,
         description=(
@@ -44,6 +45,8 @@ class ChatRequest(BaseModel):
         ),
         examples=["tr", "en"],
     )
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     # Çoklu kaynak desteği — boşsa sadece birincil kaynak kullanılır
     source_selection: list[SourceTableSelection] = Field(
         default_factory=list,
@@ -103,6 +106,7 @@ class ChatResponse(BaseModel):
             "[{source_id, alias, source_type, success, row_count, error}, ...]"
         ),
     )
+<<<<<<< HEAD
     # Rapor paylaşım bilgileri (opsiyonel)
     report_id: str | None = Field(
         default=None,
@@ -112,6 +116,8 @@ class ChatResponse(BaseModel):
         default=None,
         description="Herkese açık rapor linki (make_public=true durumunda)",
     )
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 
     model_config = {
         "json_schema_extra": {

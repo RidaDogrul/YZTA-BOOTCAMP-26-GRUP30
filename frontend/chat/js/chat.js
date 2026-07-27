@@ -92,10 +92,16 @@ function showTyping() {
   if (document.getElementById(TYPING_ID)) return;
   const row = document.createElement("div");
   row.className = "msg-row agent"; row.id = TYPING_ID;
+<<<<<<< HEAD
   const typingLabel = typeof t === "function" ? t("chat.typing") : "Analiz ediliyor";
   row.innerHTML = `
     <div class="msg-bubble">
       <div class="typing-bubble" aria-label="${typingLabel}">
+=======
+  row.innerHTML = `
+    <div class="msg-bubble">
+      <div class="typing-bubble" aria-label="Analiz ediliyor">
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
         <div class="typing-dot"></div>
@@ -106,6 +112,7 @@ function showTyping() {
 }
 
 /* Pipeline progress steps */
+<<<<<<< HEAD
 function getSteps() {
   return [
     { key:"schema",  label: typeof t === "function" ? t("proc.schema") : "Şema okunuyor" },
@@ -115,13 +122,26 @@ function getSteps() {
     { key:"insight", label: typeof t === "function" ? t("proc.insight") : "Analiz hazırlanıyor" },
   ];
 }
+=======
+const STEPS = [
+  { key:"schema",  label:"Şema okunuyor" },
+  { key:"sql",     label:"Sorgu oluşturuluyor" },
+  { key:"execute", label:"Veri çekiliyor" },
+  { key:"clean",   label:"Veri temizleniyor" },
+  { key:"insight", label:"Analiz hazırlanıyor" },
+];
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 
 function showProcessing() {
   const old = document.getElementById(TYPING_ID);
   if (old) old.remove();
   const row = document.createElement("div");
   row.className = "msg-row agent"; row.id = TYPING_ID;
+<<<<<<< HEAD
   const steps = getSteps().map((s, i) => `
+=======
+  const steps = STEPS.map((s, i) => `
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     <div class="proc-step ${i===0?"active":""}" id="step-${s.key}">
       <span class="proc-icon">
         ${i===0 ? '<div class="proc-spin"></div>' : '<div class="proc-dot"></div>'}
@@ -137,11 +157,18 @@ function showProcessing() {
 }
 
 function advanceStep(stepKey) {
+<<<<<<< HEAD
   const steps = getSteps();
   const idx = steps.findIndex(s => s.key === stepKey);
   if (idx < 0) return;
   // Mark previous done
   steps.slice(0, idx).forEach(s => {
+=======
+  const idx = STEPS.findIndex(s => s.key === stepKey);
+  if (idx < 0) return;
+  // Mark previous done
+  STEPS.slice(0, idx).forEach(s => {
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     const el = document.getElementById(`step-${s.key}`);
     if (el) { el.className = "proc-step done"; el.querySelector(".proc-icon").innerHTML = '<span class="proc-check">✓</span>'; }
   });
@@ -149,7 +176,11 @@ function advanceStep(stepKey) {
   const cur = document.getElementById(`step-${stepKey}`);
   if (cur) { cur.className = "proc-step active"; cur.querySelector(".proc-icon").innerHTML = '<div class="proc-spin"></div>'; }
   // Mark remaining idle
+<<<<<<< HEAD
   steps.slice(idx + 1).forEach(s => {
+=======
+  STEPS.slice(idx + 1).forEach(s => {
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     const el = document.getElementById(`step-${s.key}`);
     if (el) { el.className = "proc-step"; el.querySelector(".proc-icon").innerHTML = '<div class="proc-dot"></div>'; }
   });
@@ -171,8 +202,11 @@ function addAgentMessage(response) {
     sql:        response.sql_query || null,
     chartData:  response.chart_data || [],
     actionPlan: response.action_plan || [],
+<<<<<<< HEAD
     publicLink: response.public_link || null,
     reportId:   response.report_id || null,
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     ts,
   };
   messageHistory.push(entry);
@@ -181,7 +215,11 @@ function addAgentMessage(response) {
   _scrollBottom();
 }
 
+<<<<<<< HEAD
 function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, reportId, ts }) {
+=======
+function _renderAgent({ id, text, sql, chartData, actionPlan, ts }) {
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
   const row = document.createElement("div");
   row.className = "msg-row agent"; row.dataset.id = id;
 
@@ -193,6 +231,7 @@ function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, report
   let inner = `<div class="msg-bubble">
     <div class="msg-text">${summaryHtml}</div>`;
 
+<<<<<<< HEAD
   // Public link display
   if (publicLink) {
     const fullLink = `${window.location.origin}${publicLink}`;
@@ -217,6 +256,15 @@ function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, report
         <div class="msg-sql-header">
           <span>${sqlQueryText}</span>
           <button class="copy-btn" data-sql="${_esc(sql)}">${copyText}</button>
+=======
+  // SQL block
+  if (sql) {
+    inner += `
+      <div class="msg-sql">
+        <div class="msg-sql-header">
+          <span>SQL Sorgusu</span>
+          <button class="copy-btn" data-sql="${_esc(sql)}">📋 Kopyala</button>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         </div>
         <pre>${_esc(sql)}</pre>
       </div>`;
@@ -224,17 +272,26 @@ function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, report
 
   // Chart placeholder
   if (Array.isArray(chartData) && chartData.length > 0) {
+<<<<<<< HEAD
     const chartTitle = typeof t === "function" ? t("response.chart") : "📊 Veri Görselleştirme";
     inner += `
       <div class="msg-chart">
         <div class="msg-chart-title">${chartTitle}</div>
+=======
+    inner += `
+      <div class="msg-chart">
+        <div class="msg-chart-title">📊 Veri Görselleştirme</div>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <div data-chart="${id}"></div>
       </div>`;
   }
 
   // Action plan — her madde tıklanabilir buton
   if (Array.isArray(actionPlan) && actionPlan.length > 0) {
+<<<<<<< HEAD
     const actionTitle = typeof t === "function" ? t("response.action_plan") : "💡 Önerilen Adımlar — Tıklayarak Uygula";
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     const items = actionPlan.map((item, idx) => `
       <li>
         <button class="action-btn" data-q="${_esc(item)}" type="button"
@@ -246,7 +303,11 @@ function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, report
       </li>`).join("");
     inner += `
       <div class="msg-actions">
+<<<<<<< HEAD
         <div class="msg-actions-title">${actionTitle}</div>
+=======
+        <div class="msg-actions-title">💡 Önerilen Adımlar — Tıklayarak Uygula</div>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <ol>${items}</ol>
       </div>`;
   }
@@ -264,6 +325,7 @@ function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, report
   // Copy handler
   row.querySelectorAll(".copy-btn").forEach(btn => {
     btn.addEventListener("click", () => {
+<<<<<<< HEAD
       const textToCopy = btn.dataset.sql || btn.dataset.link;
       if (!textToCopy) return;
       navigator.clipboard.writeText(textToCopy).then(() => {
@@ -271,6 +333,11 @@ function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, report
         const copyText = typeof t === "function" ? t("response.copy") : "📋 Kopyala";
         btn.textContent = copiedText;
         setTimeout(() => (btn.textContent = copyText), 2000);
+=======
+      navigator.clipboard.writeText(btn.dataset.sql).then(() => {
+        btn.textContent = "✅ Kopyalandı";
+        setTimeout(() => (btn.textContent = "📋 Kopyala"), 2000);
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
       });
     });
   });
@@ -283,9 +350,13 @@ function _renderAgent({ id, text, sql, chartData, actionPlan, publicLink, report
 
       // app.js'deki State ve handleSend'e erişim
       if (typeof State === "undefined" || !State.isConnected) {
+<<<<<<< HEAD
         const connectFirstText = typeof t === "function" ? t("toast.connect_first") : "Önce bağlanın";
         const connectRequiredText = typeof t === "function" ? t("toast.connect_required") : "Bir veri kaynağına bağlanmadan analiz yapılamaz.";
         showToast("warning", connectFirstText, connectRequiredText);
+=======
+        showToast("warning", "Önce bağlanın", "Bir veri kaynağına bağlanmadan analiz yapılamaz.");
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         return;
       }
 
