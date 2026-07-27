@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 """
 LangChain ajanları için system prompt şablonları.
 Sprint 2'de Orchestrator bu prompt'ları kullanarak üç ajanı
@@ -196,7 +196,7 @@ TABLO DAVRANIŞI:
     "Üçüncü somut aksiyon adımı"
   ]
 }}
-<<<<<<< HEAD
+
 
 KURALLAR:
 - action_plan MUTLAKA bir JSON array olmalıdır, string değil.
@@ -204,7 +204,6 @@ KURALLAR:
 - Veri yoksa chart_data boş array [] olmalıdır.
 - JSON dışında hiçbir açıklama veya markdown bloğu ekleme.
 - Yanıtın tamamı geçerli JSON olmalıdır.
-=======
 """
 
 
@@ -250,6 +249,5 @@ OUTPUT: Return ONLY the JSON below. No markdown, no explanation, no code fences.
   "summary": "3-5 sentence English summary",
   "action_plan": ["first concrete step", "second concrete step"]
 }}
->>>>>>> main
->>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
+
 """
