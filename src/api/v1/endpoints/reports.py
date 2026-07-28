@@ -1,59 +1,48 @@
-"""
-Rapor endpoint'leri — Swagger/OpenAPI şablonu.
+﻿"""
+Rapor endpoint'leri.
 
-FS Notları:
-- Dashboard ana sayfası `/reports` ile geçmiş raporları listeler.
-- `/reports/{report_id}` ile detay sayfası açılır.
-- Rapor içeriği chat yanıtıyla aynı JSON yapısını kullanır (tutarlı frontend modeli).
+- GET  /reports                 → Dashboard için rapor özet listesi (şablon).
+- GET  /reports/{report_id}     → Rapor detayı (şablon).
+- POST /reports/generate        → InsightGeneratorAgent ile gerçek rapor üretir.
+- POST /reports/export          → Raporu PDF/Excel olarak indirir.
+
+Not: Raporlar sunucuda kalıcı saklanmaz (Elif'in kararı). /generate anlık
+rapor üretir; indirme için içerik istekle birlikte gelir.
 """
-<<<<<<< HEAD
 from __future__ import annotations
 
-import uuid
-from datetime import datetime
-from typing import Any
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
-=======
->>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
-from fastapi import APIRouter, HTTPException, status
-from fastapi import Depends
-from src.api.middleware.auth import CurrentUser, get_current_user
-
-<<<<<<< HEAD
 from src.agents.insight_generator import InsightGeneratorAgent
 from src.agents.orchestrator import Orchestrator
+from src.api.middleware.auth import CurrentUser, get_current_user
 from src.api.v1.schemas.chat import ChatResponse
 from src.api.v1.schemas.common import ErrorResponse
+from src.api.v1.schemas.export import ReportExportRequest
 from src.api.v1.schemas.reports import (
     GenerateReportRequest,
     ReportListResponse,
     ReportResponse,
     ReportSummary,
 )
+from src.services.report_exporter import export_report as build_export
 from src.utils.logger import get_logger
 from src.utils.session_store import session_store
 
 logger = get_logger(__name__)
-router = APIRouter()
-
-# In-memory report storage (production'da database kullanılmalı)
-# Format: {report_id: {"report_id": str, "user_id": str, "created_at": str, "content": dict, "share_with_emails": list[str], "make_public": bool, "public_link": str}}
-report_store: dict[str, dict[str, Any]] = {}
-
-=======
-from src.api.v1.schemas.common import ErrorResponse
-from src.api.v1.schemas.reports import ReportListResponse, ReportResponse, ReportSummary
 
 router = APIRouter()
 
->>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 
+# ---------------------------------------------------------------------------
+# GET /reports — Dashboard rapor listesi (şablon)
+# ---------------------------------------------------------------------------
 @router.get(
     "",
     response_model=ReportListResponse,
     summary="Rapor listesini getir",
     description=(
-        "Kullanıcının daha önce oluşturduğu tüm raporların özet listesini döner. "
+        "Kullanıcının oluşturduğu raporların özet listesini döner. "
         "Dashboard ana sayfasındaki rapor kartları bu endpoint'i kullanır."
     ),
     response_description="Rapor özet kartları listesi.",
@@ -64,8 +53,7 @@ router = APIRouter()
 def list_reports(
     current_user: CurrentUser = Depends(get_current_user),
 ) -> ReportListResponse:
-    """Geçmiş raporların özet listesini döner."""
-    # TODO(Sprint-3): Veritabanı / depolama entegrasyonu
+    """Rapor özet listesini döner (şablon; raporlar sunucuda saklanmaz)."""
     return ReportListResponse(
         total=1,
         reports=[
@@ -79,13 +67,16 @@ def list_reports(
     )
 
 
+# ---------------------------------------------------------------------------
+# GET /reports/{report_id} — Rapor detayı (şablon)
+# ---------------------------------------------------------------------------
 @router.get(
     "/{report_id}",
     response_model=ReportResponse,
     summary="Rapor detayını getir",
     description=(
-        "Belirtilen rapor kimliğine ait tam içeriği döner: özet, grafik datası ve aksiyon planı. "
-        "Frontend rapor detay sayfası bu endpoint'i kullanır."
+        "Belirtilen rapor kimliğine ait tam içeriği döner: özet, grafik verisi "
+        "ve aksiyon planı."
     ),
     response_description="Raporun tam içeriği.",
     responses={
@@ -97,31 +88,31 @@ def get_report(
     report_id: str,
     current_user: CurrentUser = Depends(get_current_user),
 ) -> ReportResponse:
-    """Tek bir raporun detayını döner."""
+    """Tek bir raporun detayını döner (şablon)."""
     if report_id == "not_found":
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Rapor bulunamadı.",
         )
-
-    # TODO(Sprint-3): report_id ile depodan okuma
     return ReportResponse(
         report_id=report_id,
         status="success",
-        summary="Şablon rapor — gerçek veri Sprint 3'te eklenecek.",
+        summary="Şablon rapor — gerçek veri /generate ile üretilir.",
         chart_data=[{"date": "2026-07-01", "predicted_sales": 12000}],
         action_plan=["Örnek aksiyon maddesi."],
     )
-<<<<<<< HEAD
 
 
+# ---------------------------------------------------------------------------
+# POST /reports/generate — Gerçek rapor üretimi (Orchestrator + Agent 3)
+# ---------------------------------------------------------------------------
 @router.post(
     "/generate",
     response_model=ChatResponse,
     summary="Insight Generator ile rapor oluştur",
     description=(
-        "Verilen oturum ve soru için InsightGeneratorAgent kullanarak "
-        "detaylı rapor (özet, grafik verisi, aksiyon planı) oluşturur."
+        "Verilen oturum ve soru için Orchestrator + InsightGeneratorAgent "
+        "kullanarak rapor (özet, grafik verisi, aksiyon planı) üretir."
     ),
     response_description="ChatResponse formatında rapor içeriği.",
     responses={
@@ -132,238 +123,137 @@ def get_report(
 )
 def generate_report(
     payload: GenerateReportRequest,
+    current_user: CurrentUser = Depends(get_current_user),
 ) -> ChatResponse:
-    """InsightGeneratorAgent kullanarak rapor oluşturur."""
-    # ── Girdi doğrulama ──────────────────────────────────────────
+    """Orchestrator ve InsightGeneratorAgent ile gerçek rapor üretir."""
     if not payload.session_id.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="session_id boş olamaz."
+            detail="session_id boş olamaz.",
+        )
+    if not payload.question.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="question boş olamaz.",
         )
 
-    # ── Session kontrolü ─────────────────────────────────────────
+    # Oturum kontrolü
     session_info = session_store.get_session_info(payload.session_id)
     if session_info is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Oturum bulunamadı veya süresi doldu."
+            detail="Oturum bulunamadı veya süresi doldu.",
         )
 
-    all_sources = session_store.get_all_connectors(payload.session_id)
-    if not all_sources:
+    connectors = session_store.get_all_connectors(payload.session_id)
+    if not connectors:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Oturum bulunamadı veya süresi doldu."
+            detail="Oturuma bağlı veri kaynağı yok.",
         )
 
     logger.info(
         "Rapor oluşturma isteği",
-        extra={
-            "session_id": payload.session_id,
-            "chat_history_count": len(payload.chat_history),
-            "language": payload.language,
-        },
+        extra={"session_id": payload.session_id, "language": payload.language},
     )
 
-    # ── Sohbet geçmişinden bağlam oluştur ─────────────────────────
-    # Son kullanıcı sorularını ve yanıtlarını birleştir
-    context_questions = []
-    for msg in payload.chat_history:
-        if msg.get("role") == "user":
-            content = msg.get("content") or msg.get("text", "")
-            if content and content.strip():
-                context_questions.append(content.strip())
-    
-    # Eğer sohbet geçmişi yoksa ve question da yoksa hata döndür
-    if not context_questions and not payload.question.strip():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Rapor oluşturmak için sohbet geçmişi veya soru gerekli."
-        )
-    
-    # Bağlam sorusu oluştur - son soruyu kullan veya verilen soruyu
-    if payload.question.strip():
-        analysis_question = payload.question.strip()
-    elif context_questions:
-        analysis_question = context_questions[-1]  # Son soru
-    else:
-        analysis_question = "Verilerin genel analizi ve özeti"
-    
-    # Analysis question boş olmamalı
-    if not analysis_question or not analysis_question.strip():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Analiz sorusu boş olamaz."
-        )
+    # Birincil kaynak üzerinden çalış
+    primary = connectors[0]
+    connector = primary["connector"]
 
-    # ── Dil tespiti: soru dilinden otomatik ─────────────────────
-    # payload.language "tr" ise frontend'den açıkça gönderilmiş demektir;
-    # ama asıl belirleyici her zaman kullanıcının sorusudur.
-    from src.agents.insight_generator import _detect_language as _detect_lang
-    detected_language = _detect_lang(analysis_question)
-    # Frontend'den "tr" gönderilmiş ama soru İngilizce ise detected'ı kullan
-    effective_language = detected_language  # sorudan tespit ettiğimiz dil kazanır
-
-    # ── Birincil kaynağı al ─────────────────────────────────────
-    src = all_sources[0]
-    connector = src["connector"]
-    alias = src.get("alias", src["source_type"])
-
-    # ── Orchestrator ile veriyi al ───────────────────────────────
+    # Orchestrator: veri çek + temizle
     try:
-        logger.info("Orchestrator başlatılıyor", extra={"analysis_question": analysis_question, "source_type": src["source_type"]})
         orch = Orchestrator(connector=connector)
-        orch_result = orch.run(user_question=analysis_question, collection=None)
-    except ValueError as exc:
-        # SQL executor'dan gelen özel hatalar (boş şema, güvenlik vb.)
-        logger.error("Orchestrator ValueError", extra={"error": str(exc), "analysis_question": analysis_question})
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Veri işleme hatası: {str(exc)}"
-        )
-    except Exception as exc:
-        logger.error("Orchestrator hatası", extra={"error": str(exc), "analysis_question": analysis_question})
+        orch_result = orch.run(payload.question)
+    except Exception as exc:  # noqa: BLE001
+        logger.error("Orchestrator hatası", extra={"error": str(exc)})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Veri işleme hatası: {str(exc)}"
-        )
+            detail=f"Veri işleme hatası: {exc}",
+        ) from exc
 
     if not orch_result.success:
-        logger.warning(
-            "Orchestrator başarısız",
-            extra={"stage": orch_result.failed_stage, "error": orch_result.error}
-        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=orch_result.error or "Bilinmeyen hata"
+            detail=orch_result.error or "Bilinmeyen hata",
         )
 
-    # ── InsightGeneratorAgent ile rapor oluştur ───────────────────
+    # Insight Generator: rapor üret
     try:
-        insight_agent = InsightGeneratorAgent(language=effective_language)
-        
-        # Sohbet geçmişi bağlamını ekle
-        enhanced_question = analysis_question
-        if context_questions:
-            enhanced_question = f"Sohbet geçmişi bağlamında: {' | '.join(context_questions[-3:])}\n\nAna soru: {analysis_question}"
-        
+        insight_agent = InsightGeneratorAgent(language=payload.language)
         insight_result = insight_agent.run(
-            question=enhanced_question,
+            question=payload.question,
             cleaned_df=orch_result.cleaned_df,
             forecast_result=None,
-            cleaning_report=None,
-            language=effective_language,  # ← tespit edilmiş dili kullan
+            cleaning_report=orch_result.cleaning_report,
+            language=payload.language,
         )
-
-        if not insight_result.success:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=insight_result.error or "Rapor oluşturma hatası"
-            )
-
-        # ── ChatResponse formatında döndür ─────────────────────────
-        response = ChatResponse(
-            status="success",
-            summary=insight_result.summary,
-            sql_query=orch_result.query or None,
-            chart_data=insight_result.chart_data,
-            action_plan=insight_result.action_plan,
-            sources_queried=[
-                {
-                    "source_id": src["source_id"],
-                    "alias": alias,
-                    "source_type": src["source_type"],
-                    "success": True,
-                    "row_count": orch_result.row_count,
-                    "error": None,
-                }
-            ],
-        )
-        
-        # ── Raporu kaydet ve paylaşım ayarlarını uygula ───────────────
-        report_id = f"rpt_{uuid.uuid4().hex[:8]}"
-        public_link = None
-        
-        if payload.make_public:
-            # Herkese açık link oluştur
-            public_link = f"/api/v1/reports/public/{report_id}"
-        
-        report_data = {
-            "report_id": report_id,
-            "user_id": session_info.get("user_id", "anonymous"),
-            "created_at": datetime.now().isoformat(),
-            "content": response.model_dump(),
-            "share_with_emails": payload.share_with_emails,
-            "make_public": payload.make_public,
-            "public_link": public_link,
-            "title": analysis_question[:50] + "..." if len(analysis_question) > 50 else analysis_question,
-        }
-        
-        report_store[report_id] = report_data
-        logger.info(f"Report saved: {report_id}, public_link: {public_link}, make_public: {payload.make_public}")
-        
-        # Email gönderme simülasyonu (production'da gerçek email servisi kullanılmalı)
-        if payload.share_with_emails:
-            logger.info(
-                "Rapor email gönderilecek",
-                extra={
-                    "report_id": report_id,
-                    "emails": payload.share_with_emails,
-                }
-            )
-            # TODO: Gerçek email gönderme servisi entegrasyonu
-        
-        # Response'a rapor ID ve paylaşım linki ekle
-        response.report_id = report_id
-        response.public_link = public_link
-        
-        return response
-
-    except HTTPException:
-        raise
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.error("InsightGenerator hatası", extra={"error": str(exc)})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Rapor oluşturma hatası: {str(exc)}"
+            detail=f"Rapor oluşturma hatası: {exc}",
+        ) from exc
+
+    if not insight_result.success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=insight_result.error or "Rapor oluşturma hatası",
         )
 
+    return ChatResponse(
+        status="success",
+        summary=insight_result.summary,
+        sql_query=orch_result.query or "",
+        chart_data=insight_result.chart_data,
+        action_plan=insight_result.action_plan,
+    )
 
-@router.get(
-    "/public/{report_id}",
-    response_model=ChatResponse,
-    summary="Herkese açık raporu getir",
+
+# ---------------------------------------------------------------------------
+# POST /reports/export — PDF / Excel indirme
+# ---------------------------------------------------------------------------
+@router.post(
+    "/export",
+    summary="Raporu PDF veya Excel olarak indir",
     description=(
-        "Rapor ID'si ile herkese açık raporu getirir. "
-        "Rapor make_public=true olarak oluşturulmuş olmalıdır."
+        "Gönderilen rapor içeriğini PDF ya da Excel dosyasına çevirir ve indirir. "
+        "Raporlar sunucuda saklanmadığı için içerik istek gövdesinde gönderilir."
     ),
-    response_description="Rapor içeriği.",
+    response_description="İndirilebilir dosya (PDF veya XLSX).",
     responses={
-        404: {"model": ErrorResponse, "description": "Rapor bulunamadı veya herkese açık değil"},
+        200: {
+            "content": {
+                "application/pdf": {},
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {},
+            },
+            "description": "Rapor dosyası",
+        },
+        400: {"model": ErrorResponse, "description": "Geçersiz format"},
+        500: {"model": ErrorResponse, "description": "Rapor oluşturulamadı"},
     },
 )
-def get_public_report(report_id: str) -> ChatResponse:
-    """Herkese açık raporu getirir."""
-    logger.info(f"Public report requested: {report_id}")
-    logger.info(f"Available reports: {list(report_store.keys())}")
-    
-    if report_id not in report_store:
-        logger.warning(f"Report not found: {report_id}")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Rapor bulunamadı."
+def export_report_endpoint(
+    payload: ReportExportRequest,
+    current_user: CurrentUser = Depends(get_current_user),
+) -> Response:
+    """Rapor içeriğini istenen dosya biçiminde döndürür."""
+    try:
+        content, filename, media_type = build_export(
+            payload.model_dump(), payload.format
         )
-    
-    report_data = report_store[report_id]
-    
-    if not report_data.get("make_public", False):
-        logger.warning(f"Report not public: {report_id}")
+    except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bu rapor herkese açık değil."
-        )
-    
-    logger.info(f"Returning public report: {report_id}")
-    return ChatResponse(**report_data["content"])
-=======
->>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
+            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
+        ) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Rapor dosyası oluşturulamadı.",
+        ) from exc
+
+    return Response(
+        content=content,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -237,7 +237,7 @@ def _extract_text_content(content) -> str:
                 parsed = ast.literal_eval(content)
                 if isinstance(parsed, dict) and "text" in parsed:
                     return str(parsed["text"]).strip()
-            except:
+            except Exception:
                 # If parsing fails, the string might be incomplete or malformed
                 # Try to extract text field using a more robust method
                 # Look for 'text': and extract everything after it until the end of the string
@@ -323,7 +323,7 @@ def _extract_json(text: str) -> dict[str, Any]:
                 # Single quotes'ı double quotes'a çevir (basit yaklaşım)
                 json_str_fixed = json_str.replace("'", '"')
                 return json.loads(json_str_fixed)
-            except:
+            except Exception:
                 pass
         raise ValueError(f"JSON parse hatası: {exc}. Ham metin: {json_str[:200]}")
 
