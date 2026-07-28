@@ -126,20 +126,20 @@ def _mask_pii_rows(rows: list[dict]) -> list[dict]:
     try:
         return [_pii.anonymize_dict(row) for row in rows]
     except Exception as exc:
-        logger.warning("PII maskeleme hatası (rows)", extra={"error": str(exc)})
-        return rows
-    return ChatResponse(
-        status="error",
-        summary=(
-            "Sorgunuz işlenirken bir sorun oluştu. "
-            "Lütfen veri kaynağı bağlantısını kontrol edip tekrar deneyin.\n\n"
-            f"Teknik detay: {error_msg}"
-        ),
-        sql_query=None,
-        chart_data=[],
-        action_plan=[],
-        sources_queried=[],
-    )
+        error_msg = str(exc)
+        
+        return ChatResponse(
+            status="error",
+            summary=(
+                "Sorgunuz işlenirken bir sorun oluştu. "
+                "Lütfen veri kaynağı bağlantısını kontrol edip tekrar deneyin.\n\n"
+                f"Teknik detay: {error_msg}"
+            ),
+            sql_query=None,
+            chart_data=[],
+            action_plan=[],
+            sources_queried=[],
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -362,6 +362,14 @@ def _normalize_action_plan(raw) -> list[str]:
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
+
+def _fallback_response(question, reason_message):
+    return {
+        "status": "fallback",
+        "question": question,
+        "message": reason_message,
+        "answer": "Üzgünüm, sorunuzu yanıtlamak için uygun bir kaynak bulunamadı."
+    }
 
 @router.post(
     "/ask",
