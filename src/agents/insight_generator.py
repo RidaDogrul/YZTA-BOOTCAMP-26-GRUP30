@@ -30,6 +30,7 @@ from src.agents.prompts import (
     INSIGHT_GENERATOR_PROMPT_TR,
 )
 from src.agents.tools.action_planner import ActionPlanner
+from src.security.anonymizer import PIIAnonymizer
 from src.utils.logger import get_logger
 
 # ForecastResult'ı yalnızca TİP DENETİMİ için import ediyoruz. Çalışma anında
@@ -45,6 +46,18 @@ Language = Literal["tr", "en"]
 
 MAX_SAMPLE_ROWS = 20      # LLM'e gönderilecek örnek satır sayısı (token tasarrufu)
 MAX_CHART_ROWS = 200      # chart_data'ya konacak maksimum satır
+
+# PIIAnonymizer singleton — pahalı init (spaCy model yükleme)
+try:
+    _pii_anonymizer = PIIAnonymizer()
+    _PII_AVAILABLE = True
+except Exception as _pii_err:
+    logger.warning(
+        "PIIAnonymizer yüklenemedi — PII maskeleme devre dışı",
+        extra={"error": str(_pii_err)}
+    )
+    _pii_anonymizer = None  # type: ignore[assignment]
+    _PII_AVAILABLE = False
 
 
 # ---------------------------------------------------------------------------
@@ -82,22 +95,56 @@ class InsightResult:
 # ---------------------------------------------------------------------------
 # Yardımcılar — LLM'e verilecek bağlamı hazırlar (hepsi gerçek veriden)
 # ---------------------------------------------------------------------------
+def _apply_pii_mask_df(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    DataFrame'i PIIAnonymizer ile maskeler.
+    Anonymizer yoksa veya hata çıkarsa orijinali döner (güvenli fallback).
+    """
+    if not _PII_AVAILABLE or _pii_anonymizer is None:
+        return df
+    try:
+        return _pii_anonymizer.anonymize_dataframe(df)
+    except Exception as exc:
+        logger.warning("PII maskeleme hatası (DataFrame)", extra={"error": str(exc)})
+        return df
+
+
+def _apply_pii_mask_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Dict listesindeki (chart_data gibi) PII değerlerini maskeler.
+    """
+    if not _PII_AVAILABLE or _pii_anonymizer is None or not rows:
+        return rows
+    try:
+        return [_pii_anonymizer.anonymize_dict(row) for row in rows]
+    except Exception as exc:
+        logger.warning("PII maskeleme hatası (rows)", extra={"error": str(exc)})
+        return rows
+
 def _json_safe(df: pd.DataFrame) -> list[dict[str, Any]]:
     """DataFrame'i JSON'a güvenli kayıt listesine çevirir (tarih/NaN dahil)."""
     return json.loads(df.to_json(orient="records", date_format="iso"))
 
 
 def _build_data_context(df: pd.DataFrame) -> dict[str, Any]:
-    """Veri hakkında LLM'e verilecek özet bağlam."""
+    """
+    Veri hakkında LLM'e verilecek özet bağlam.
+    LLM'e gönderilecek örnek satırlar PII maskeli; istatistikler ham veriden.
+    """
     context: dict[str, Any] = {
         "row_count": int(len(df)),
         "columns": [str(c) for c in df.columns],
-        "sample_rows": _json_safe(df.head(MAX_SAMPLE_ROWS)),
     }
 
+    # Sayısal istatistikler ham veriden hesaplanır — maskeleme yapmıyoruz
     numeric = df.select_dtypes("number")
     if not numeric.empty:
         context["numeric_summary"] = json.loads(numeric.describe().round(2).to_json())
+
+    # Örnek satırlar LLM'e gitmeden önce PII maskele
+    sample_df = _apply_pii_mask_df(df.head(MAX_SAMPLE_ROWS))
+    context["sample_rows"] = _json_safe(sample_df)
+
     return context
 
 
@@ -145,6 +192,7 @@ def _build_chart_data(
     """
     Grafik verisini GERÇEK veriden üretir (LLM'den değil).
     Tahmin varsa tahmin serisini, yoksa temizlenmiş veriyi döndürür.
+    Çıktı PII maskeli olur.
     """
     if forecast_result is not None:
         forecast = forecast_result.forecast.head(MAX_CHART_ROWS)
@@ -162,10 +210,78 @@ def _build_chart_data(
                     item[lower_col] = round(float(row[lower_col]), 2)
                     item[upper_col] = round(float(row[upper_col]), 2)
             rows.append(item)
-        return rows
+        # Tahmin verisi PII içermez genelde ama yine de maskeleyelim
+        return _apply_pii_mask_rows(rows)
 
-    # Tahmin yoksa: temizlenmiş verinin kendisi grafik verisidir.
-    return _json_safe(df.head(MAX_CHART_ROWS))
+    # Tahmin yoksa: temizlenmiş verinin kendisi grafik verisidir — PII maskele
+    chart_df = _apply_pii_mask_df(df.head(MAX_CHART_ROWS))
+    return _json_safe(chart_df)
+
+
+def _extract_text_content(content) -> str:
+    """
+    LLM response.content farklı formatlarda gelebilir:
+      - str                          → doğrudan döndür
+      - list[str]                    → birleştir
+      - list[dict]  (Gemini format)  → "text" alanlarını birleştir
+      - dict with 'text' field       → text alanını döndür
+      - str representation of dict   → parse and extract text
+    """
+    if isinstance(content, str):
+        content = content.strip()
+        # Eğer string bir dict representation ise (örn: "{'type': 'text', 'text': '...'}")
+        if content.startswith("{") and content.endswith("}"):
+            try:
+                # Try to parse as dict using ast.literal_eval for safety
+                import ast
+                parsed = ast.literal_eval(content)
+                if isinstance(parsed, dict) and "text" in parsed:
+                    return str(parsed["text"]).strip()
+            except Exception:
+                # If parsing fails, the string might be incomplete or malformed
+                # Try to extract text field using a more robust method
+                # Look for 'text': and extract everything after it until the end of the string
+                # or until we hit a closing brace that's not part of the JSON
+                text_key_pos = content.find("'text'")
+                if text_key_pos == -1:
+                    text_key_pos = content.find('"text"')
+                
+                if text_key_pos != -1:
+                    # Find the colon after 'text'
+                    colon_pos = content.find(":", text_key_pos)
+                    if colon_pos != -1:
+                        # Find the opening quote after the colon
+                        quote_start = content.find("'", colon_pos)
+                        if quote_start == -1:
+                            quote_start = content.find('"', colon_pos)
+                        
+                        if quote_start != -1:
+                            # Extract everything from after the quote to the end
+                            # Then remove trailing whitespace and the closing brace/quote
+                            text = content[quote_start + 1:].rstrip()
+                            # Remove trailing '}' or '"' if present
+                            if text.endswith("}"):
+                                text = text[:-1].rstrip()
+                            if text.endswith("'") or text.endswith('"'):
+                                text = text[:-1].rstrip()
+                            # Unescape
+                            text = text.replace("\\n", "\n").replace("\\t", "\t").replace("\\'", "'").replace("\\\\", "\\")
+                            return text.strip()
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for item in content:
+            if isinstance(item, str):
+                parts.append(item)
+            elif isinstance(item, dict):
+                parts.append(str(item.get("text", item)))
+            else:
+                parts.append(str(item))
+        return "".join(parts).strip()
+    if isinstance(content, dict):
+        # Tek dict ise text alanını al
+        return str(content.get("text", content)).strip()
+    return str(content).strip()
 
 
 def _extract_json(text: str) -> dict[str, Any]:
@@ -173,15 +289,123 @@ def _extract_json(text: str) -> dict[str, Any]:
     LLM çıktısından JSON'u güvenli biçimde ayıklar.
     LLM bazen ```json ... ``` bloğu veya öncesinde/sonrasında metin ekler;
     bu fonksiyon onları temizler.
+    Gemini formatında (list[dict] with type/text) gelen yanıtları da handle eder.
     """
+    if not text or not text.strip():
+        raise ValueError("LLM çıktısı boş.")
+    
+    # Önce markdown code block'ları temizle
     cleaned = re.sub(r"^```(?:json)?|```$", "", text.strip(), flags=re.MULTILINE)
-
+    
+    # JSON bloğunu bul
     start = cleaned.find("{")
     end = cleaned.rfind("}")
     if start == -1 or end == -1 or end < start:
         raise ValueError("LLM çıktısında JSON bulunamadı.")
+    
+    json_str = cleaned[start : end + 1]
+    
+    # Eğer JSON single quotes kullanıyorsa, double quotes'a çevir
+    # Ama dikkatli ol - string içindeki single quotes'ı değiştirme
+    if "'" in json_str and '"' not in json_str[:50]:  # Başlangıçta double quote yoksa, single quotes kullanılıyordur
+        # Basit yaklaşım: tüm single quotes'ı double quotes'a çevir
+        # Bu her zaman doğru değil ama çoğu durumda işe yarar
+        json_str = json_str.replace("'", '"')
+    
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError as exc:
+        # JSON parse hatası - daha detaylı hata mesajı
+        # Eğer hata "Expecting property name" ise, bu muhtemelen single quotes kullanılmış demektir
+        # Single quotes'ı double quotes'a çevirip tekrar dene
+        if "Expecting property name" in str(exc):
+            try:
+                # Single quotes'ı double quotes'a çevir (basit yaklaşım)
+                json_str_fixed = json_str.replace("'", '"')
+                return json.loads(json_str_fixed)
+            except Exception:
+                pass
+        raise ValueError(f"JSON parse hatası: {exc}. Ham metin: {json_str[:200]}")
 
-    return json.loads(cleaned[start : end + 1])
+
+def _detect_language(text: str) -> Language:
+    """
+    Metnin dilini tespit eder (geliştirilmiş Türkçe/İngilizce ayrımı).
+    
+    Öncelik sırası:
+    1. Türkçe özel karakterler (ç, ğ, ı, ö, ş, ü) → kesin Türkçe
+    2. Yaygın Türkçe kelimeler → muhtemel Türkçe
+    3. Yaygın İngilizce kelimeler → muhtemel İngilizce
+    4. Varsayılan → İngilizce (çoğu teknik terim İngilizce)
+    """
+    if not text or not text.strip():
+        return "en"  # Boş input için İngilizce varsayılan
+    
+    text_lower = text.lower()
+    
+    # 1. Türkçe özel karakter kontrolü (kesin belirleyici)
+    turkish_chars = set("çğıöşü")
+    if any(char in turkish_chars for char in text_lower):
+        return "tr"
+    
+    # 2. Yaygın Türkçe kelimeler (güncellenmiş liste)
+    turkish_words = {
+        # Bağlaçlar
+        "ve", "veya", "ama", "fakat", "ancak", "çünkü", "için", "ile", "gibi",
+        # Soru kelimeleri
+        "ne", "nedir", "nasıl", "hangi", "kim", "nerede", "ne zaman", "kaç", "niye", "niçin",
+        # Fiiller
+        "göster", "analiz", "yap", "bul", "getir", "çıkar", "hesapla", "sırala", "listele",
+        "karşılaştır", "özetle", "açıkla", "tahmin", "ver", "çek",
+        # İsimler
+        "toplam", "ortalama", "maksimum", "minimum", "sayı", "miktar", "değer",
+        "tablo", "veri", "rapor", "sonuç", "kategori", "ürün", "müşteri", "satış",
+        # Sıfatlar
+        "en", "çok", "az", "yüksek", "düşük", "son", "ilk", "önümüzdeki", "geçen",
+        # Zaman
+        "ay", "gün", "hafta", "yıl", "bugün", "dün", "yarın",
+    }
+    
+    # 3. Yaygın İngilizce kelimeler
+    english_words = {
+        # Verbs
+        "show", "analyze", "find", "get", "calculate", "sort", "list", "compare",
+        "summarize", "explain", "predict", "give", "fetch", "display",
+        # Nouns
+        "total", "average", "maximum", "minimum", "number", "amount", "value",
+        "table", "data", "report", "result", "category", "product", "customer", "sales",
+        # Adjectives
+        "highest", "lowest", "last", "first", "next", "previous", "top", "bottom",
+        # Time
+        "day", "week", "month", "year", "today", "yesterday", "tomorrow",
+        # Questions
+        "what", "how", "which", "who", "where", "when", "why",
+    }
+    
+    # Kelimeleri ayıkla
+    words = re.findall(r"\b\w+\b", text_lower)
+    if not words:
+        return "en"
+    
+    turkish_count = sum(1 for word in words if word in turkish_words)
+    english_count = sum(1 for word in words if word in english_words)
+    
+    # Eğer Türkçe kelime oranı %15'ten fazlaysa Türkçe
+    if words and turkish_count / len(words) > 0.15:
+        return "tr"
+    
+    # Eğer İngilizce kelime oranı %15'ten fazlaysa İngilizce
+    if words and english_count / len(words) > 0.15:
+        return "en"
+    
+    # Türkçe ve İngilizce kelime sayısını karşılaştır
+    if turkish_count > english_count:
+        return "tr"
+    elif english_count > turkish_count:
+        return "en"
+    
+    # Varsayılan: İngilizce (teknik terimler için)
+    return "en"
 
 
 def _normalize_action_plan(value: Any) -> list[str]:
@@ -242,9 +466,14 @@ class InsightGeneratorAgent:
             cleaned_df: Agent 2'nin temizlediği veri.
             forecast_result: Varsa tahmin motorunun sonucu.
             cleaning_report: Varsa Agent 2'nin yapısal temizleme raporu.
-            language: Rapor dili; None ise varsayılan kullanılır.
+            language: Rapor dili; None ise sorudan otomatik tespit edilir.
         """
-        lang = language or self._default_language
+        # Dil tespiti: açıkça belirtilmişse kullan, değilse sorudan tespit et
+        if language is not None:
+            lang = language
+        else:
+            detected = _detect_language(question)
+            lang = detected or self._default_language
 
         # --- Boş veri: LLM'e gitmeye gerek yok ---
         if cleaned_df is None or cleaned_df.empty:
@@ -287,7 +516,8 @@ class InsightGeneratorAgent:
         raw_text = ""
         try:
             response = self._llm.invoke(messages)
-            raw_text = str(getattr(response, "content", response))
+            raw_text = _extract_text_content(response.content)
+            logger.info("LLM yanıt alındı", extra={"raw_text_length": len(raw_text), "raw_text_preview": raw_text[:200]})
             parsed = _extract_json(raw_text)
         except ValueError as exc:
             # JSON parse edilemedi: ham metni özet olarak kullan, akışı kesme.
