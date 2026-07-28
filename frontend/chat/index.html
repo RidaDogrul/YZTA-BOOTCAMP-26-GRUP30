@@ -43,16 +43,44 @@
         <span class="logo-sub">Analytics</span>
       </div>
     </div>
+<<<<<<< HEAD
+    <div class="sidebar-actions">
+      <button class="icon-btn" id="langToggle" aria-label="Switch to English">
+        <span id="langLabel">EN</span>
+      </button>
+      <button class="icon-btn" id="sidebarToggle" data-i18n-aria="sidebar.close" aria-label="Paneli kapat">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M15 5L5 15M5 5l10 10"/>
+        </svg>
+      </button>
+    </div>
+=======
     <button class="icon-btn" id="sidebarToggle" aria-label="Paneli kapat">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M15 5L5 15M5 5l10 10"/>
       </svg>
     </button>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
   </div>
 
   <!-- Connection pill -->
   <div class="conn-pill" id="connPill">
     <span class="conn-dot" id="connDot"></span>
+<<<<<<< HEAD
+    <span class="conn-label" id="connLabel" data-i18n="connection.waiting">Bağlantı bekleniyor</span>
+  </div>
+
+  <!-- Divider label -->
+  <div class="sidebar-section-label" data-i18n="sidebar.data_source">Veri Kaynağı</div>
+
+  <!-- Source selector -->
+  <div class="source-tabs" id="sourceTabs" role="tablist">
+    <button class="source-tab active" data-src="postgresql" role="tab" data-i18n="source.postgresql">PostgreSQL</button>
+    <button class="source-tab" data-src="mysql" role="tab" data-i18n="source.mysql">MySQL</button>
+    <button class="source-tab" data-src="mongodb" role="tab" data-i18n="source.mongodb">MongoDB</button>
+    <button class="source-tab" data-src="s3" role="tab" data-i18n="source.s3">☁ S3</button>
+    <button class="source-tab" data-src="snowflake" role="tab" data-i18n="source.snowflake">❄ Snowflake</button>
+=======
     <span class="conn-label" id="connLabel">Bağlantı bekleniyor</span>
   </div>
 
@@ -66,6 +94,7 @@
     <button class="source-tab" data-src="mongodb" role="tab">MongoDB</button>
     <button class="source-tab" data-src="s3" role="tab">☁ S3</button>
     <button class="source-tab" data-src="snowflake" role="tab">❄ Snowflake</button>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
   </div>
   <input type="hidden" id="sourceType" value="postgresql" />
 
@@ -75,7 +104,11 @@
     <!-- SQL panel (pg + mysql) -->
     <div class="field-panel active" id="panel-sql">
       <div class="field-group">
+<<<<<<< HEAD
+        <label class="field-label" for="connectionUrl" data-i18n="form.connection_url">Bağlantı URL</label>
+=======
         <label class="field-label" for="connectionUrl">Bağlantı URL</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <input class="field-input" type="text" id="connectionUrl"
                placeholder="postgresql+psycopg2://user:pass@host:5432/db" />
       </div>
@@ -84,7 +117,11 @@
     <!-- MongoDB panel -->
     <div class="field-panel" id="panel-mongodb">
       <div class="field-group">
+<<<<<<< HEAD
+        <label class="field-label" for="mongodbUri" data-i18n="form.mongodb_uri">MongoDB URI</label>
+=======
         <label class="field-label" for="mongodbUri">MongoDB URI</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <input class="field-input" type="text" id="mongodbUri"
                placeholder="mongodb://localhost:27017/mydb" />
       </div>
@@ -93,6 +130,17 @@
     <!-- S3 panel -->
     <div class="field-panel" id="panel-s3">
       <div class="field-group">
+<<<<<<< HEAD
+        <label class="field-label" for="bucketName" data-i18n="form.bucket">Bucket</label>
+        <input class="field-input" type="text" id="bucketName" placeholder="my-data-bucket" />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="awsAccessKey" data-i18n="form.access_key">Access Key ID</label>
+        <input class="field-input" type="text" id="awsAccessKey" placeholder="AKIA..." />
+      </div>
+      <div class="field-group">
+        <label class="field-label" for="awsSecretKey" data-i18n="form.secret_key">Secret Access Key</label>
+=======
         <label class="field-label" for="bucketName">Bucket</label>
         <input class="field-input" type="text" id="bucketName" placeholder="my-data-bucket" />
       </div>
@@ -102,11 +150,16 @@
       </div>
       <div class="field-group">
         <label class="field-label" for="awsSecretKey">Secret Access Key</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <input class="field-input" type="password" id="awsSecretKey" placeholder="••••••••" />
       </div>
       <div class="field-row">
         <div class="field-group">
+<<<<<<< HEAD
+          <label class="field-label" for="awsRegion" data-i18n="form.region">Region</label>
+=======
           <label class="field-label" for="awsRegion">Region</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
           <input class="field-input" type="text" id="awsRegion" value="eu-central-1" />
         </div>
       </div>
@@ -116,37 +169,65 @@
     <div class="field-panel" id="panel-snowflake">
       <div class="field-row">
         <div class="field-group">
+<<<<<<< HEAD
+          <label class="field-label" for="sfAccount" data-i18n="form.account">Account</label>
+=======
           <label class="field-label" for="sfAccount">Account</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
           <input class="field-input" type="text" id="sfAccount" placeholder="xy12345.eu-central-1" />
         </div>
       </div>
       <div class="field-row">
         <div class="field-group">
+<<<<<<< HEAD
+          <label class="field-label" for="sfUser" data-i18n="form.user">Kullanıcı</label>
+          <input class="field-input" type="text" id="sfUser" placeholder="myuser" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="sfPassword" data-i18n="form.password">Parola</label>
+=======
           <label class="field-label" for="sfUser">Kullanıcı</label>
           <input class="field-input" type="text" id="sfUser" placeholder="myuser" />
         </div>
         <div class="field-group">
           <label class="field-label" for="sfPassword">Parola</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
           <input class="field-input" type="password" id="sfPassword" placeholder="••••••••" />
         </div>
       </div>
       <div class="field-row">
         <div class="field-group">
+<<<<<<< HEAD
+          <label class="field-label" for="sfDatabase" data-i18n="form.database">Veritabanı</label>
+          <input class="field-input" type="text" id="sfDatabase" placeholder="MY_DB" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="sfSchema" data-i18n="form.schema">Şema</label>
+=======
           <label class="field-label" for="sfDatabase">Veritabanı</label>
           <input class="field-input" type="text" id="sfDatabase" placeholder="MY_DB" />
         </div>
         <div class="field-group">
           <label class="field-label" for="sfSchema">Şema</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
           <input class="field-input" type="text" id="sfSchema" value="PUBLIC" />
         </div>
       </div>
       <div class="field-row">
         <div class="field-group">
+<<<<<<< HEAD
+          <label class="field-label" for="sfWarehouse" data-i18n="form.warehouse">Warehouse</label>
+          <input class="field-input" type="text" id="sfWarehouse" placeholder="COMPUTE_WH" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="sfRole" data-i18n="form.role">Rol</label>
+=======
           <label class="field-label" for="sfWarehouse">Warehouse</label>
           <input class="field-input" type="text" id="sfWarehouse" placeholder="COMPUTE_WH" />
         </div>
         <div class="field-group">
           <label class="field-label" for="sfRole">Rol</label>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
           <input class="field-input" type="text" id="sfRole" placeholder="SYSADMIN" />
         </div>
       </div>
@@ -161,20 +242,32 @@
         <circle cx="8" cy="8" r="6.5"/>
         <path d="M8 5v3l2 2" stroke-linecap="round"/>
       </svg>
+<<<<<<< HEAD
+      <span data-i18n="btn.test_connection">Test Et</span>
+=======
       Test Et
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     </button>
     <button class="btn-primary" id="btnConnect">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
         <path d="M10.5 5.5L13 8l-2.5 2.5M5.5 5.5L3 8l2.5 2.5" stroke-linecap="round" stroke-linejoin="round"/>
         <line x1="9.5" y1="4" x2="6.5" y2="12" stroke-linecap="round"/>
       </svg>
+<<<<<<< HEAD
+      <span data-i18n="btn.connect">Bağlan</span>
+=======
       Bağlan
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     </button>
     <button class="btn-disconnect hidden" id="btnDisconnect">
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
         <path d="M5 5l6 6M11 5l-6 6" stroke-linecap="round"/>
       </svg>
+<<<<<<< HEAD
+      <span data-i18n="btn.disconnect">Bağlantıyı Kes</span>
+=======
       Bağlantıyı Kes
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     </button>
   </div>
 
@@ -186,9 +279,15 @@
           <rect x="1" y="3" width="12" height="9" rx="2"/>
           <path d="M4 7h6M4 9.5h3.5" stroke-linecap="round"/>
         </svg>
+<<<<<<< HEAD
+        <span data-i18n="form.schema">Şema</span>
+      </span>
+      <button class="schema-refresh-btn" id="btnRefreshSchema" data-i18n-aria="btn.refresh_schema" aria-label="Yenile">
+=======
         Şema
       </span>
       <button class="schema-refresh-btn" id="btnRefreshSchema" aria-label="Yenile">
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M12 7A5 5 0 1 1 2.5 4.5" stroke-linecap="round"/>
           <polyline points="2.5 1.5 2.5 4.5 5.5 4.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -199,29 +298,49 @@
   </div>
 
   <!-- Veri Birleştirme Paneli -->
+<<<<<<< HEAD
+  <div class="sidebar-section-label" id="mergeSectionLabel" style="display:none" data-i18n="merge.connected_sources">Veri Birleştirme</div>
+=======
   <div class="sidebar-section-label" id="mergeSectionLabel" style="display:none">Veri Birleştirme</div>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
   <div class="merge-bar" id="mergeBar">
     <div class="merge-bar-title">
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7" style="width:12px;height:12px;vertical-align:-1px;margin-right:4px" aria-hidden="true">
         <circle cx="3" cy="7" r="2"/><circle cx="11" cy="3" r="2"/><circle cx="11" cy="11" r="2"/>
         <path d="M5 7h3M8.5 3.7L5 6.3M8.5 10.3L5 7.7" stroke-linecap="round"/>
       </svg>
+<<<<<<< HEAD
+      <span data-i18n="merge.connected_sources">Bağlı Kaynaklar &amp; Tablo Seçimi</span>
+    </div>
+    <p class="merge-bar-hint">
+      <span data-i18n="merge.hint">Her kaynağı genişletip hangi tabloların sorgulanacağını seçin.
+      İkinci kaynak eklemek için <strong>Kaynak Ekle</strong>'ye tıklayın.</span>
+=======
       Bağlı Kaynaklar &amp; Tablo Seçimi
     </div>
     <p class="merge-bar-hint">
       Her kaynağı genişletip hangi tabloların sorgulanacağını seçin.
       İkinci kaynak eklemek için <strong>Kaynak Ekle</strong>'ye tıklayın.
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     </p>
 
     <!-- Kaynak accordion listesi (JS tarafından doldurulur) -->
     <div id="mergeSourceList"></div>
 
     <!-- Kaynak ekleme butonu -->
+<<<<<<< HEAD
+    <button class="btn-add-source" id="btnAddSource" data-i18n-title="merge.add_source_title" title="Yeni veri kaynağı ekle">
+      <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px;flex-shrink:0">
+        <path d="M7 1v12M1 7h12" stroke-linecap="round"/>
+      </svg>
+      <span data-i18n="merge.add_source">Kaynak Ekle</span>
+=======
     <button class="btn-add-source" id="btnAddSource" title="Yeni veri kaynağı ekle">
       <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px;flex-shrink:0">
         <path d="M7 1v12M1 7h12" stroke-linecap="round"/>
       </svg>
       Kaynak Ekle
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     </button>
 
     <!-- ── Kaynak ekleme formu (toggle ile açılır) ──────── -->
@@ -230,11 +349,19 @@
         <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8" style="width:11px;height:11px;vertical-align:-1px;margin-right:4px" aria-hidden="true">
           <path d="M6 1v10M1 6h10" stroke-linecap="round"/>
         </svg>
+<<<<<<< HEAD
+        <span data-i18n="add_source.title">Yeni Veri Kaynağı Bağla</span>
+      </div>
+
+      <!-- Kaynak tipi seçici (birincil kaynak hariç — JS tarafından render edilir) -->
+      <div class="asf-type-label" data-i18n="add_source.type">Kaynak Türü</div>
+=======
         Yeni Veri Kaynağı Bağla
       </div>
 
       <!-- Kaynak tipi seçici (birincil kaynak hariç — JS tarafından render edilir) -->
       <div class="asf-type-label">Kaynak Türü</div>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
       <div class="asf-type-picker" id="asfTypePicker">
         <!-- JS ile doldurulur -->
       </div>
@@ -247,7 +374,11 @@
       <!-- İsteğe bağlı kaynak adı -->
       <div class="field-group" style="padding:0;margin-top:2px">
         <label class="field-label" for="addSourceAlias">
+<<<<<<< HEAD
+          <span data-i18n="add_source.alias">Kaynak Adı</span> <span style="opacity:.5">(isteğe bağlı)</span>
+=======
           Kaynak Adı <span style="opacity:.5">(isteğe bağlı)</span>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         </label>
         <input class="field-input" type="text" id="addSourceAlias"
                placeholder="örn: Finans DB, Müşteri S3…" autocomplete="off"/>
@@ -258,9 +389,15 @@
           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px" aria-hidden="true">
             <path d="M1 6l4 4 6-7" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
+<<<<<<< HEAD
+          <span data-i18n="add_source.connect_add">Bağlan &amp; Ekle</span>
+        </button>
+        <button class="btn-add-source-cancel" id="btnAddSourceCancel" data-i18n="btn.cancel">İptal</button>
+=======
           Bağlan &amp; Ekle
         </button>
         <button class="btn-add-source-cancel" id="btnAddSourceCancel">İptal</button>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
       </div>
     </div>
 
@@ -269,14 +406,22 @@
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" style="width:12px;height:12px" aria-hidden="true">
         <path d="M2 8h4l2-4 2 8 2-4h2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
+<<<<<<< HEAD
+      <span data-i18n="merge.run_merge">Tüm Kaynaklarla Sorgula</span>
+=======
       Tüm Kaynaklarla Sorgula
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     </button>
   </div>
 
   <!-- Veri Arama -->
   <div class="data-search-wrap" id="dataSearchWrap">
     <input class="data-search-input" id="dataSearchInput"
+<<<<<<< HEAD
+           type="text" data-i18n-placeholder="data.search.placeholder" placeholder="Verilerde ara… (tablo, sütun, değer)"
+=======
            type="text" placeholder="Verilerde ara… (tablo, sütun, değer)"
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
            autocomplete="off" spellcheck="false" />
     <span class="data-search-icon">🔍</span>
     <div class="data-search-results" id="dataSearchResults"></div>
@@ -285,7 +430,11 @@
   <!-- Session chip -->
   <div class="session-chip hidden" id="sessionInfo">
     <span class="session-chip-dot"></span>
+<<<<<<< HEAD
+    <span data-i18n="session.id">Oturum:</span>
+=======
     <span>Oturum:</span>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
     <code id="sessionIdDisplay"></code>
   </div>
 
@@ -298,24 +447,67 @@
 
   <!-- Top bar -->
   <header class="topbar">
+<<<<<<< HEAD
+    <button class="icon-btn" id="menuBtn" data-i18n-aria="sidebar.open" aria-label="Menü">
+=======
     <button class="icon-btn" id="menuBtn" aria-label="Menü">
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
         <path d="M3 5h14M3 10h14M3 15h14" stroke-linecap="round"/>
       </svg>
     </button>
     <div class="topbar-center">
+<<<<<<< HEAD
+      <span class="topbar-title" data-i18n="app.title">Veri Analiz Platformu</span>
+      <span class="topbar-badge" id="topbarBadge"></span>
+    </div>
+    <div class="topbar-right">
+      <!-- Auth butonları -->
+      <button class="btn-auth-login" id="btnLogin" aria-label="Giriş Yap">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M10 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3" stroke-linecap="round"/>
+          <path d="M7 11l3-3-3-3M10 8H2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Giriş Yap</span>
+      </button>
+      <div class="auth-user-chip hidden" id="authUserChip">
+        <div class="auth-avatar" id="authAvatar" aria-hidden="true">U</div>
+        <span class="auth-username" id="authUsername">Kullanıcı</span>
+        <button class="auth-logout-btn" id="btnLogout" aria-label="Çıkış Yap" title="Çıkış Yap">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M6 14H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3" stroke-linecap="round"/>
+            <path d="M9 11l3-3-3-3M12 8H4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+      <button class="btn-report" id="btnGenerateReport" data-i18n-aria="btn.generate_report" aria-label="Rapor Oluştur">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M2 3h6l2 2h6v9H2V3z" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 7v4M6 9h4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span data-i18n="btn.generate_report">Rapor Oluştur</span>
+      </button>
+      <button class="btn-clear-chat" id="btnClearChat" data-i18n-aria="btn.clear_chat" aria-label="Sohbeti temizle">
+=======
       <span class="topbar-title">Veri Analiz Platformu</span>
       <span class="topbar-badge" id="topbarBadge"></span>
     </div>
     <div class="topbar-right">
       <button class="btn-clear-chat" id="btnClearChat" aria-label="Sohbeti temizle">
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1M6 7v5M10 7v5" stroke-linecap="round"/>
           <path d="M3 4l.8 9.2A1 1 0 0 0 4.8 14h6.4a1 1 0 0 0 1-.8L13 4" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
+<<<<<<< HEAD
+        <span data-i18n="btn.clear_chat">Sohbeti Temizle</span>
+      </button>
+      <button class="icon-btn" id="btnClearHistory" data-i18n-aria="btn.clear_history" title="localStorage geçmişini sil" aria-label="Geçmişi sil" style="display:none">
+=======
         Sohbeti Temizle
       </button>
       <button class="icon-btn" id="btnClearHistory" title="localStorage geçmişini sil" aria-label="Geçmişi sil" style="display:none">
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M5 7h10l-1 9H6L5 7z" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M8 10v4M12 10v4M3 7h14" stroke-linecap="round"/>
@@ -325,6 +517,178 @@
     </div>
   </header>
 
+<<<<<<< HEAD
+  <!-- Auth Modal (Login / Register) -->
+  <div class="modal" id="authModal" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="modal-content auth-modal-content">
+      <!-- Tab başlıkları -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tabLogin" data-tab="login" aria-selected="true">Giriş Yap</button>
+        <button class="auth-tab" id="tabRegister" data-tab="register" aria-selected="false">Kayıt Ol</button>
+      </div>
+
+      <!-- Giriş Formu -->
+      <div class="auth-panel" id="panelLogin">
+        <div class="auth-modal-header">
+          <div class="auth-logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="28" height="28" rx="8" fill="url(#authLg)"/>
+              <path d="M7 19l5-6 4 4 5-8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="authLg" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div>
+            <h2 class="auth-modal-title" id="authModalTitle">Tekrar hoş geldiniz</h2>
+            <p class="auth-modal-sub">Nexus Analytics hesabınıza giriş yapın</p>
+          </div>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div class="auth-field-group">
+            <label class="auth-label" for="loginEmail">E-posta</label>
+            <input class="auth-input" type="email" id="loginEmail"
+                   placeholder="ornek@mail.com" autocomplete="email" required />
+          </div>
+          <div class="auth-field-group">
+            <label class="auth-label" for="loginPassword">Şifre</label>
+            <div class="auth-pw-wrap">
+              <input class="auth-input" type="password" id="loginPassword"
+                     placeholder="••••••••" autocomplete="current-password" required />
+              <button type="button" class="auth-pw-toggle" aria-label="Şifreyi göster/gizle" data-target="loginPassword">
+                <svg class="eye-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+                  <circle cx="8" cy="8" r="2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="auth-error hidden" id="loginError" role="alert"></div>
+          <button type="submit" class="btn-auth-submit" id="btnLoginSubmit">
+            <span class="auth-btn-text">Giriş Yap</span>
+            <span class="auth-spinner hidden" aria-hidden="true"></span>
+          </button>
+        </form>
+        <p class="auth-switch-text">
+          Hesabınız yok mu?
+          <button class="auth-switch-link" data-switch="register">Kayıt olun</button>
+        </p>
+      </div>
+
+      <!-- Kayıt Formu -->
+      <div class="auth-panel hidden" id="panelRegister">
+        <div class="auth-modal-header">
+          <div class="auth-logo-icon" aria-hidden="true">
+            <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="28" height="28" rx="8" fill="url(#authLg2)"/>
+              <path d="M7 19l5-6 4 4 5-8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              <defs>
+                <linearGradient id="authLg2" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#6366f1"/><stop offset="1" stop-color="#8b5cf6"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div>
+            <h2 class="auth-modal-title">Hesap oluşturun</h2>
+            <p class="auth-modal-sub">Nexus Analytics'e ücretsiz katılın</p>
+          </div>
+        </div>
+
+        <form id="registerForm" novalidate>
+          <div class="auth-field-group">
+            <label class="auth-label" for="registerName">Ad Soyad <span class="auth-optional">(isteğe bağlı)</span></label>
+            <input class="auth-input" type="text" id="registerName"
+                   placeholder="Ahmet Yılmaz" autocomplete="name" />
+          </div>
+          <div class="auth-field-group">
+            <label class="auth-label" for="registerEmail">E-posta</label>
+            <input class="auth-input" type="email" id="registerEmail"
+                   placeholder="ornek@mail.com" autocomplete="email" required />
+          </div>
+          <div class="auth-field-group">
+            <label class="auth-label" for="registerPassword">Şifre <span class="auth-optional">(min. 6 karakter)</span></label>
+            <div class="auth-pw-wrap">
+              <input class="auth-input" type="password" id="registerPassword"
+                     placeholder="••••••••" autocomplete="new-password" required minlength="6" />
+              <button type="button" class="auth-pw-toggle" aria-label="Şifreyi göster/gizle" data-target="registerPassword">
+                <svg class="eye-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+                  <circle cx="8" cy="8" r="2"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="auth-error hidden" id="registerError" role="alert"></div>
+          <button type="submit" class="btn-auth-submit" id="btnRegisterSubmit">
+            <span class="auth-btn-text">Kayıt Ol</span>
+            <span class="auth-spinner hidden" aria-hidden="true"></span>
+          </button>
+        </form>
+        <p class="auth-switch-text">
+          Zaten hesabınız var mı?
+          <button class="auth-switch-link" data-switch="login">Giriş yapın</button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Sharing Modal -->
+  <div class="modal" id="reportShareModal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 data-i18n="modal.share_report_title">Rapor Paylaşım Ayarları</h3>
+        <button class="modal-close" id="closeReportModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="shareEmails" data-i18n="modal.share_emails">Email Adresleri (virgülle ayırın)</label>
+          <input type="text" id="shareEmails" placeholder="user1@example.com, user2@example.com">
+        </div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="makePublic">
+            <span data-i18n="modal.make_public">Raporu herkese açık yap</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="cancelReportShare" data-i18n="btn.cancel">İptal</button>
+        <button class="btn-primary" id="confirmReportShare" data-i18n="btn.generate_report">Rapor Oluştur</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Report Success Overlay -->
+  <div class="report-success-overlay" id="reportSuccessOverlay" style="display: none;">
+    <div class="report-success-content">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M22 4L12 14.01l-3-3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2 data-i18n="report.success_title">Raporunuz başarıyla oluşturuldu</h2>
+      <div class="report-link-container">
+        <label data-i18n="report.share_link">Paylaşım Linki:</label>
+        <div class="report-link-wrapper">
+          <input type="text" id="reportSuccessLink" readonly>
+          <button class="copy-link-btn" id="copySuccessLink">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M4 7h8M4 11h8M2 4h12v12H2z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <button class="close-overlay-btn" id="closeSuccessOverlay" data-i18n="btn.close">Kapat</button>
+    </div>
+  </div>
+
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
   <!-- Welcome / empty state -->
   <div class="welcome" id="emptyState">
     <div class="welcome-inner">
@@ -344,12 +708,34 @@
           </svg>
         </div>
       </div>
+<<<<<<< HEAD
+      <h2 class="welcome-title" data-i18n="welcome.title">Verinizi anlamlandırın</h2>
+      <p class="welcome-desc" data-i18n="welcome.desc">
+=======
       <h2 class="welcome-title">Verinizi anlamlandırın</h2>
       <p class="welcome-desc">
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         Sol panelden bir veri kaynağı bağlayın, ardından verileriniz
         hakkında herhangi bir soru sorun — tablo yapısı, trendler, özetler.
       </p>
       <div class="suggestion-grid" id="suggestionGrid">
+<<<<<<< HEAD
+        <button class="suggestion-card" data-q="Hangi tablolar mevcut ve kaç kayıt var?" data-i18n-q="suggestion.tables">
+          <span class="sg-icon">🗂</span>
+          <span class="sg-text" data-i18n="suggestion.tables">Hangi tablolar mevcut ve kaç kayıt var?</span>
+        </button>
+        <button class="suggestion-card" data-q="Son 30 günün satış özetini çıkar" data-i18n-q="suggestion.sales_summary">
+          <span class="sg-icon">📈</span>
+          <span class="sg-text" data-i18n="suggestion.sales_summary">Son 30 günün satış özetini çıkar</span>
+        </button>
+        <button class="suggestion-card" data-q="Müşteri başına ortalama sipariş değeri nedir?" data-i18n-q="suggestion.avg_order">
+          <span class="sg-icon">💡</span>
+          <span class="sg-text" data-i18n="suggestion.avg_order">Müşteri başına ortalama sipariş değeri nedir?</span>
+        </button>
+        <button class="suggestion-card" data-q="En yüksek gelir getiren kategorileri listele" data-i18n-q="suggestion.top_categories">
+          <span class="sg-icon">🏆</span>
+          <span class="sg-text" data-i18n="suggestion.top_categories">En yüksek gelir getiren kategorileri listele</span>
+=======
         <button class="suggestion-card" data-q="Hangi tablolar mevcut ve kaç kayıt var?">
           <span class="sg-icon">🗂</span>
           <span class="sg-text">Hangi tablolar mevcut ve kaç kayıt var?</span>
@@ -365,6 +751,7 @@
         <button class="suggestion-card" data-q="En yüksek gelir getiren kategorileri listele">
           <span class="sg-icon">🏆</span>
           <span class="sg-text">En yüksek gelir getiren kategorileri listele</span>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         </button>
       </div>
     </div>
@@ -381,18 +768,30 @@
         class="input-field"
         placeholder="Veri kaynağınız hakkında bir şey sorun…"
         rows="1"
+<<<<<<< HEAD
+        data-i18n-placeholder="chat.placeholder_disconnected"
+=======
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
         aria-label="Soru"
         disabled
       ></textarea>
       <div class="input-actions">
+<<<<<<< HEAD
+        <button class="send-btn" id="sendBtn" data-i18n-aria="btn.send" aria-label="Gönder" disabled>
+=======
         <button class="send-btn" id="sendBtn" aria-label="Gönder" disabled>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
           <svg viewBox="0 0 20 20" fill="currentColor">
             <path d="M3.105 2.289a.75.75 0 0 0-.826.95l1.414 4.925A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.896 28.896 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.289z"/>
           </svg>
         </button>
       </div>
     </div>
+<<<<<<< HEAD
+    <p class="input-footer" data-i18n="input.footer">Enter → gönder &nbsp;·&nbsp; Shift+Enter → yeni satır</p>
+=======
     <p class="input-footer">Enter → gönder &nbsp;·&nbsp; Shift+Enter → yeni satır</p>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
   </div>
 
 </main>
@@ -400,7 +799,13 @@
 <!-- Toast container -->
 <div class="toast-stack" id="toastContainer" aria-live="assertive" aria-atomic="false"></div>
 
+<<<<<<< HEAD
+<script src="js/i18n.js"></script>
 <script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+=======
+<script src="js/api.js"></script>
+>>>>>>> d7986939dd5b5403ad24650bcaf075afcdd9506f
 <script src="js/chart.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/app.js"></script>
