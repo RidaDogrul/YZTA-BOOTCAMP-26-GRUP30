@@ -65,6 +65,7 @@ function _initEls() {
     topbarBadge:         g("topbarBadge"),
     btnClearHistory:     g("btnClearHistory"),
     btnClearChat:        g("btnClearChat"),
+    btnGenerateReport:   g("btnGenerateReport"),
     questionInput:       g("questionInput"),
     sendBtn:             g("sendBtn"),
     // Merge
@@ -144,7 +145,8 @@ function _setConnected(sessionId, sourceType, sourceId, alias) {
   State.isConnected = true;
 
   const displayAlias = alias || _srcLabel(sourceType);
-  _setDot("connected", `${displayAlias} bağlı`);
+  const connectedText = typeof t === "function" ? t("connection.source_connected", { source: displayAlias }) : `${displayAlias} bağlı`;
+  _setDot("connected", connectedText);
 
   const cls = SRC_COLOR_CLASS[sourceType] || "";
   els.topbarBadge.textContent = displayAlias;
@@ -156,7 +158,7 @@ function _setConnected(sessionId, sourceType, sourceId, alias) {
   els.sourceTabs.forEach(t => (t.disabled = true));
 
   els.questionInput.disabled    = false;
-  els.questionInput.placeholder = "Verileriniz hakkında herhangi bir şey sorun…";
+  els.questionInput.placeholder = typeof t === "function" ? t("chat.placeholder") : "Verileriniz hakkında herhangi bir şey sorun…";
   els.sendBtn.disabled          = false;
 
   els.sessionIdDisplay.textContent = sessionId;
@@ -188,7 +190,8 @@ function _setDisconnected() {
   State.isConnected = false;
   State.schemaData  = null;
 
-  _setDot("", "Bağlantı bekleniyor");
+  const waitingText = typeof t === "function" ? t("connection.waiting") : "Bağlantı bekleniyor";
+  _setDot("", waitingText);
   els.topbarBadge.className = "topbar-badge";
 
   els.btnConnect.classList.remove("hidden");
@@ -197,7 +200,7 @@ function _setDisconnected() {
   els.sourceTabs.forEach(t => (t.disabled = false));
 
   els.questionInput.disabled    = true;
-  els.questionInput.placeholder = "Veri kaynağınız hakkında bir şey sorun…";
+  els.questionInput.placeholder = typeof t === "function" ? t("chat.placeholder_disconnected") : "Veri kaynağınız hakkında bir şey sorun…";
   els.sendBtn.disabled          = true;
 
   els.schemaPanel.classList.add("hidden");
@@ -247,16 +250,23 @@ function _renderMergeSourceList() {
   MergeState.sources.forEach(src => {
     const cls = SRC_COLOR_CLASS[src.sourceType] || "";
     const selCount = src.tables.length;
-    const selLabel = selCount === 0 ? "Tüm tablolar" : `${selCount} seçili`;
+    const allTablesText = typeof t === "function" ? t("merge.all_tables") : "Tüm tablolar";
+    const selectedText = typeof t === "function" ? t("merge.selected_count") : "seçili";
+    const selLabel = selCount === 0 ? allTablesText : `${selCount} ${selectedText}`;
 
     // ── Ana kart ───────────────────────────────────────
     const card = document.createElement("div");
     card.className = "msrc-card" + (src.expanded ? " expanded" : "");
     card.dataset.sid = src.sourceId;   // ← artık src-xxx gerçek ID
 
+    const showTablesLabel = typeof t === "function" ? t("merge.show_tables") : "Tabloları göster";
+    const removeLabel = typeof t === "function" ? t("merge.remove") : "Kaldır";
+    const removeTitle = typeof t === "function" ? t("merge.remove_source") : "Kaynağı kaldır";
+    const schemaLoadingText = typeof t === "function" ? t("merge.schema_loading") : "Şema yükleniyor…";
+
     card.innerHTML = `
       <div class="msrc-header">
-        <button class="msrc-toggle" aria-expanded="${src.expanded}" aria-label="Tabloları göster">
+        <button class="msrc-toggle" aria-expanded="${src.expanded}" aria-label="${showTablesLabel}">
           <svg class="msrc-chevron" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M2 4l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -265,7 +275,7 @@ function _renderMergeSourceList() {
         <span class="msrc-alias">${_esc(src.alias)}</span>
         <span class="msrc-sel-count ${selCount > 0 ? "has-sel" : ""}">${selLabel}</span>
         ${src.isPrimary ? "" : `
-          <button class="msrc-remove" title="Kaynağı kaldır" aria-label="Kaldır">
+          <button class="msrc-remove" title="${removeTitle}" aria-label="${removeLabel}">
             <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M1 1l8 8M9 1l-8 8" stroke-linecap="round"/>
             </svg>
@@ -275,7 +285,7 @@ function _renderMergeSourceList() {
 
       <div class="msrc-body" ${src.expanded ? "" : 'style="display:none"'}>
         ${src.loading
-          ? `<div class="msrc-loading"><div class="proc-spin"></div> Şema yükleniyor…</div>`
+          ? `<div class="msrc-loading"><div class="proc-spin"></div> <span>${schemaLoadingText}</span></div>`
           : _buildTableList(src)
         }
       </div>
@@ -310,7 +320,10 @@ function _renderMergeSourceList() {
 function _buildTableList(src) {
   const sd = src.schemaData;
 
-  if (!sd) return `<div class="msrc-empty">Şema henüz yüklenmedi.</div>`;
+  if (!sd) {
+    const schemaNotLoadedText = typeof t === "function" ? t("merge.schema_not_loaded") : "Şema henüz yüklenmedi.";
+    return `<div class="msrc-empty">${schemaNotLoadedText}</div>`;
+  }
   if (sd.error) return `<div class="msrc-error">⚠ ${_esc(sd.error)}</div>`;
 
   let items = [];
@@ -321,7 +334,10 @@ function _buildTableList(src) {
   else if (sd.files?.length)
     items = sd.files.map(f => f.key || String(f));
 
-  if (!items.length) return `<div class="msrc-empty">Bu kaynakta tablo bulunamadı.</div>`;
+  if (!items.length) {
+    const noTablesText = typeof t === "function" ? t("merge.no_tables") : "Bu kaynakta tablo bulunamadı.";
+    return `<div class="msrc-empty">${noTablesText}</div>`;
+  }
 
   const selected = new Set(src.tables);
   const rows = items.map(name => {
@@ -334,10 +350,13 @@ function _buildTableList(src) {
       </label>`;
   }).join("");
 
+  const selectAllText = typeof t === "function" ? t("merge.select_all") : "Tümünü Seç";
+  const clearText = typeof t === "function" ? t("merge.clear") : "Temizle";
+
   return `
     <div class="msrc-toolbar">
-      <button class="msrc-sel-all">Tümünü Seç</button>
-      <button class="msrc-sel-none">Temizle</button>
+      <button class="msrc-sel-all">${selectAllText}</button>
+      <button class="msrc-sel-none">${clearText}</button>
     </div>
     <div class="msrc-table-list">${rows}</div>`;
 }
@@ -368,7 +387,8 @@ function _toggleAccordion(sourceId) {
 async function _fetchSchemaForSource(src, card) {
   src.loading = true;
   const body = card?.querySelector(".msrc-body");
-  if (body) body.innerHTML = `<div class="msrc-loading"><div class="proc-spin"></div> Şema yükleniyor…</div>`;
+  const schemaLoadingText = typeof t === "function" ? t("merge.schema_loading") : "Şema yükleniyor…";
+  if (body) body.innerHTML = `<div class="msrc-loading"><div class="proc-spin"></div> <span>${schemaLoadingText}</span></div>`;
 
   try {
     const multi = await apiGetMultiSchema(State.sessionId);
@@ -403,7 +423,8 @@ async function _fetchSchemaForSource(src, card) {
   } catch (err) {
     src.loading = false;
     const b = card?.querySelector(".msrc-body");
-    if (b) b.innerHTML = `<div class="msrc-error">⚠ Şema yüklenemedi: ${_esc(err.message)}</div>`;
+    const schemaLoadErrorText = typeof t === "function" ? t("merge.schema_load_error", { error: err.message }) : `Şema yüklenemedi: ${err.message}`;
+    if (b) b.innerHTML = `<div class="msrc-error">⚠ ${_esc(schemaLoadErrorText)}</div>`;
   }
 }
 
@@ -454,7 +475,9 @@ function _updateSelCount(sourceId) {
   const badge = card.querySelector(".msrc-sel-count");
   if (badge) {
     const n = src.tables.length;
-    badge.textContent = n === 0 ? "Tüm tablolar" : `${n} seçili`;
+    const allTablesText = typeof t === "function" ? t("merge.all_tables") : "Tüm tablolar";
+    const selectedText = typeof t === "function" ? t("merge.selected_count") : "seçili";
+    badge.textContent = n === 0 ? allTablesText : `${n} ${selectedText}`;
     badge.classList.toggle("has-sel", n > 0);
   }
 }
@@ -468,9 +491,11 @@ async function _removeSource(sourceId) {
     await apiRemoveSource(State.sessionId, sourceId);
     MergeState.sources = MergeState.sources.filter(s => s.sourceId !== sourceId);
     _renderMergeSourceList();
-    showToast("info", "Kaynak kaldırıldı");
+    const sourceRemovedText = typeof t === "function" ? t("toast.source_removed") : "Kaynak kaldırıldı";
+    showToast("info", sourceRemovedText);
   } catch (err) {
-    showToast("error", "Kaldırılamadı", err.message);
+    const removeFailedText = typeof t === "function" ? t("toast.remove_failed") : "Kaldırılamadı";
+    showToast("error", removeFailedText, err.message);
   }
 }
 
@@ -504,7 +529,8 @@ function _renderAsfTypePicker() {
   const available = ALL_SOURCE_TYPES.filter(st => !usedTypes.has(st.type));
 
   if (!available.length) {
-    picker.innerHTML = `<p class="asf-no-types">Eklenebilecek başka kaynak tipi yok.</p>`;
+    const noTypesText = typeof t === "function" ? t("add_source.no_types") : "Eklenebilecek başka kaynak tipi yok.";
+    picker.innerHTML = `<p class="asf-no-types">${noTypesText}</p>`;
     _asfSelectedType = null;
     return;
   }
@@ -623,7 +649,10 @@ function _renderAsfFields(type) {
  */
 function _buildAddSourcePayload(sessionId, alias) {
   const type = _asfSelectedType;
-  if (!type) throw new Error("Kaynak tipi seçilmedi.");
+  if (!type) {
+    const noTypeText = typeof t === "function" ? t("add_source.no_type_selected") : "Kaynak tipi seçilmedi.";
+    throw new Error(noTypeText);
+  }
 
   const g = (id) => document.getElementById(id)?.value.trim() || "";
   const base = { session_id: sessionId, source_type: type, alias: alias || undefined };
@@ -654,7 +683,8 @@ function _buildAddSourcePayload(sessionId, alias) {
         snowflake_role:      g("asf_sfRole") || undefined,
       };
     default:
-      throw new Error(`Bilinmeyen kaynak tipi: ${type}`);
+      const unknownTypeText = typeof t === "function" ? t("add_source.unknown_type", { type }) : `Bilinmeyen kaynak tipi: ${type}`;
+      throw new Error(unknownTypeText);
   }
 }
 
@@ -689,11 +719,14 @@ async function _handleAddSourceConfirm() {
   try {
     payload = _buildAddSourcePayload(State.sessionId, alias);
   } catch (err) {
-    showToast("warning", "Eksik bilgi", err.message);
+    const missingInfoText = typeof t === "function" ? t("add_source.missing_info") : "Eksik bilgi";
+    showToast("warning", missingInfoText, err.message);
     return;
   }
 
-  _setLoading(els.btnAddSourceConfirm, true, "Bağlanıyor…");
+  const connectingText = typeof t === "function" ? t("add_source.connecting") : "Bağlanıyor…";
+  const connectAddText = typeof t === "function" ? t("btn.connect_add") : "Bağlan & Ekle";
+  _setLoading(els.btnAddSourceConfirm, true, connectingText);
   try {
     const res = await apiAddSource(payload);
     _syncSourcesFromBackend(res.sources);
@@ -711,16 +744,18 @@ async function _handleAddSourceConfirm() {
       await _fetchSchemaForSource(newSrc, card);
     }
 
-    showToast("success", "Kaynak eklendi", res.message);
+    const sourceAddedText = typeof t === "function" ? t("add_source.source_added") : "Kaynak eklendi";
+    showToast("success", sourceAddedText, res.message);
     _hideAddSourceForm();
   } catch (err) {
-    showToast("error", "Kaynak eklenemedi", err.message, 5000);
+    const addErrorText = typeof t === "function" ? t("add_source.add_error") : "Kaynak eklenemedi";
+    showToast("error", addErrorText, err.message, 5000);
   } finally {
     _setLoading(els.btnAddSourceConfirm, false, `
       <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" style="width:10px;height:10px" aria-hidden="true">
         <path d="M1 6l4 4 6-7" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      Bağlan &amp; Ekle`);
+      ${connectAddText}`);
   }
 }
 
@@ -790,12 +825,13 @@ async function _loadMultiSchema() {
 function _handleRunMerge() {
   if (MergeState.sources.length < 2) return;
   const labels = MergeState.sources.map(s => s.alias).join(" + ");
-  const q = `${labels} kaynaklarındaki verileri karşılaştır ve özet analiz yap`;
-  els.questionInput.value = q;
+  const queryText = typeof t === "function" ? t("merge.query_text", { sources: labels }) : `${labels} kaynaklarındaki verileri karşılaştır ve özet analiz yap`;
+  const mergeReadyTitle = typeof t === "function" ? t("toast.merge_ready") : "Birleştirme hazır";
+  const mergeReadyMsg = typeof t === "function" ? t("toast.merge_ready_message") : "Gönder tuşuna basarak çoklu kaynak analizini başlatın.";
+  els.questionInput.value = queryText;
   _autoResize(els.questionInput);
   els.questionInput.focus();
-  showToast("info", "Birleştirme hazır",
-    "Gönder tuşuna basarak çoklu kaynak analizini başlatın.");
+  showToast("info", mergeReadyTitle, mergeReadyMsg);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -884,31 +920,43 @@ function _closeSearchResults() {
    Button handlers
 ═══════════════════════════════════════════════════════════ */
 async function handleTestConnection() {
-  _setDot("testing", "Test ediliyor…");
-  _setLoading(els.btnTestConn, true, "Test ediliyor…");
+  const lang = typeof getLanguage === "function" ? getLanguage() : "tr";
+  const testingText = lang === "tr" ? "Test ediliyor…" : "Testing…";
+  _setDot("testing", testingText);
+  _setLoading(els.btnTestConn, true, testingText);
   try {
     const result = await apiTestConnection(buildConnectPayload());
-    _setDot("connected", "Test başarılı");
-    showToast("success", "Bağlantı başarılı",
+    const successText = lang === "tr" ? "Test başarılı" : "Test successful";
+    const connSuccessText = lang === "tr" ? "Bağlantı başarılı" : "Connection successful";
+    _setDot("connected", successText);
+    showToast("success", connSuccessText,
       result.version || result.database || result.bucket || "");
   } catch (err) {
-    _setDot("error", "Test başarısız");
-    showToast("error", "Bağlantı testi başarısız", err.message, 5000);
+    const failText = lang === "tr" ? "Test başarısız" : "Test failed";
+    const connFailText = lang === "tr" ? "Bağlantı testi başarısız" : "Connection test failed";
+    _setDot("error", failText);
+    showToast("error", connFailText, err.message, 5000);
   } finally {
-    _setLoading(els.btnTestConn, false, "Test Et");
-    if (!State.isConnected)
-      setTimeout(() => { if (!State.isConnected) _setDot("", "Bağlantı bekleniyor"); }, 3000);
+    const testBtnText = lang === "tr" ? "Test Et" : "Test";
+    _setLoading(els.btnTestConn, false, testBtnText);
+    if (!State.isConnected) {
+      const waitingText = lang === "tr" ? "Bağlantı bekleniyor" : "Waiting for connection";
+      setTimeout(() => { if (!State.isConnected) _setDot("", waitingText); }, 3000);
+    }
   }
 }
 
 async function handleConnect() {
-  _setDot("testing", "Bağlanıyor…");
-  _setLoading(els.btnConnect, true, "Bağlanıyor…");
+  const lang = typeof getLanguage === "function" ? getLanguage() : "tr";
+  const connectingText = lang === "tr" ? "Bağlanıyor…" : "Connecting…";
+  _setDot("testing", connectingText);
+  _setLoading(els.btnConnect, true, connectingText);
   try {
     const res = await apiConnect(buildConnectPayload());
     // res.source_id artık backend'den geliyor (gerçek src_xxx ID)
     _setConnected(res.session_id, res.source_type, res.source_id, _srcLabel(res.source_type));
-    showToast("success", "Bağlantı kuruldu", res.message);
+    const connectedText = lang === "tr" ? "Bağlantı kuruldu" : "Connected";
+    showToast("success", connectedText, res.message);
 
     // Şemayı yükle: sidebar şema paneline + birincil kaynağın accordion'una
     _loadSchema(res.session_id);
@@ -922,20 +970,33 @@ async function handleConnect() {
       _fetchSchemaForSource(primarySrc, card);
     }
   } catch (err) {
-    _setDot("error", "Bağlantı hatası");
-    showToast("error", "Bağlanılamadı", err.message, 5000);
-    setTimeout(() => { if (!State.isConnected) _setDot("", "Bağlantı bekleniyor"); }, 3000);
+    const errorText = lang === "tr" ? "Bağlantı hatası" : "Connection error";
+    const failedText = lang === "tr" ? "Bağlanılamadı" : "Connection failed";
+    _setDot("error", errorText);
+    showToast("error", failedText, err.message, 5000);
+    const waitingText = lang === "tr" ? "Bağlantı bekleniyor" : "Waiting for connection";
+    setTimeout(() => { if (!State.isConnected) _setDot("", waitingText); }, 3000);
   } finally {
-    _setLoading(els.btnConnect, false, "Bağlan");
+    const connectBtnText = lang === "tr" ? "Bağlan" : "Connect";
+    _setLoading(els.btnConnect, false, connectBtnText);
   }
 }
 
 async function handleDisconnect() {
   if (!State.sessionId) return;
+  const lang = typeof getLanguage === "function" ? getLanguage() : "tr";
   _setLoading(els.btnDisconnect, true, "");
-  try { await apiDisconnect(State.sessionId); showToast("info", "Bağlantı kesildi"); }
+  try { 
+    await apiDisconnect(State.sessionId); 
+    const disconnectedText = lang === "tr" ? "Bağlantı kesildi" : "Disconnected";
+    showToast("info", disconnectedText); 
+  }
   catch { /* ignore */ }
-  finally { _setDisconnected(); _setLoading(els.btnDisconnect, false, "Bağlantıyı Kes"); }
+  finally { 
+    _setDisconnected(); 
+    const disconnectBtnText = lang === "tr" ? "Bağlantıyı Kes" : "Disconnect";
+    _setLoading(els.btnDisconnect, false, disconnectBtnText); 
+  }
 }
 
 async function _loadSchema(sessionId) {
@@ -1057,12 +1118,189 @@ function _bindEvents() {
   });
 
   els.btnClearChat?.addEventListener("click", () => {
-    if (!confirm("Sohbet ekranı temizlenecek. Devam edilsin mi?")) return;
-    clearHistory(); showToast("info", "Sohbet temizlendi");
+    const msg = typeof getLanguage === "function" && getLanguage() === "tr"
+      ? "Sohbet ekranı temizlenecek. Devam edilsin mi?"
+      : "Chat screen will be cleared. Continue?";
+    if (!confirm(msg)) return;
+    clearHistory(); showToast("info", typeof getLanguage === "function" && getLanguage() === "tr" ? "Sohbet temizlendi" : "Chat cleared");
   });
+
+  els.btnGenerateReport?.addEventListener("click", async () => {
+    const lang = typeof getLanguage === "function" ? getLanguage() : "tr";
+
+    if (!State.sessionId) {
+      showToast("error", lang === "tr"
+        ? "Lütfen önce bir veri kaynağına bağlanın."
+        : "Please connect to a data source first.");
+      return;
+    }
+
+    const chatHistory = typeof messageHistory !== "undefined" ? messageHistory : [];
+    const question    = els.questionInput?.value?.trim() || "";
+
+    if (!question && chatHistory.length === 0) {
+      showToast("error", lang === "tr"
+        ? "Lütfen bir soru girin veya önce sohbet başlatın."
+        : "Please enter a question or start a conversation first.");
+      return;
+    }
+
+    // ── Sharing modal göster ──────────────────────────────
+    const modal      = document.getElementById("reportShareModal");
+    const closeBtn   = document.getElementById("closeReportModal");
+    const cancelBtn  = document.getElementById("cancelReportShare");
+    const confirmBtn = document.getElementById("confirmReportShare");
+    if (!modal) return;
+
+    modal.style.display = "flex";
+
+    const closeModal = () => {
+      modal.style.display = "none";
+      document.getElementById("shareEmails").value   = "";
+      document.getElementById("makePublic").checked  = false;
+    };
+
+    const handleGenerate = async () => {
+      const emailsRaw  = document.getElementById("shareEmails").value;
+      const makePublic = document.getElementById("makePublic").checked;
+      const shareWithEmails = emailsRaw
+        .split(",").map(e => e.trim()).filter(e => e.includes("@"));
+
+      closeModal();
+      showToast("info", lang === "tr" ? "Rapor oluşturuluyor…" : "Generating report…");
+
+      // Butonu disable ederek çift tıklamayı engelle
+      if (els.btnGenerateReport) els.btnGenerateReport.disabled = true;
+
+      try {
+        const response = await apiGenerateReport(
+          State.sessionId, question, null, chatHistory, shareWithEmails, makePublic
+        );
+
+        if (question) addUserMessage(question);
+        addAgentMessage(response);
+
+        // ── Dashboard linki oluştur ────────────────────────
+        const reportId   = response.report_id;
+        const publicLink = response.public_link; // "/api/v1/reports/public/rpt_xxx"
+
+        if (reportId) {
+          // Dashboard URL: her zaman public_id param ile → dashboard sayfası
+          const dashBase    = "../dashboard/index.html";
+          let   dashUrl;
+
+          if (makePublic && publicLink) {
+            // Herkese açık: ?public_id= ile — auth gereksiz
+            dashUrl = `${dashBase}?public_id=${encodeURIComponent(reportId)}`;
+          } else {
+            // Sadece yetkili kullanıcılar: ?report_id= ile (JWT gönderir)
+            dashUrl = `${dashBase}?report_id=${encodeURIComponent(reportId)}`;
+          }
+
+          // Başarı overlay'ini doldur
+          const overlay   = document.getElementById("reportSuccessOverlay");
+          const linkInput = document.getElementById("reportSuccessLink");
+          if (overlay && linkInput) {
+            // Paylaşım linki: public ise tam URL, değilse dashboard URL
+            const shareableUrl = makePublic
+              ? `${window.location.origin}${publicLink.replace("/api/v1/reports/public/", "")}${dashBase.replace("..", "")}?public_id=${encodeURIComponent(reportId)}`
+              : `${window.location.origin.replace(/\/[^/]*$/, "")}${dashUrl.replace("..", "")}`;
+
+            linkInput.value = dashUrl; // göreceli yol daha güvenilir
+
+            overlay.style.display = "flex";
+
+            // Dashboard'a git butonu (yeni bir tane oluştur)
+            const existingBtn = overlay.querySelector(".btn-open-dashboard");
+            if (!existingBtn) {
+              const openBtn = document.createElement("button");
+              openBtn.className = "btn-open-dashboard close-overlay-btn";
+              openBtn.style.cssText = "background:var(--indigo);margin-right:8px;";
+              openBtn.textContent   = lang === "tr" ? "Dashboard'u Aç" : "Open Dashboard";
+              openBtn.addEventListener("click", () => window.open(dashUrl, "_blank"));
+              const closeOverlayBtn = document.getElementById("closeSuccessOverlay");
+              if (closeOverlayBtn) overlay.querySelector(".report-success-content").insertBefore(openBtn, closeOverlayBtn);
+            } else {
+              existingBtn.onclick = () => window.open(dashUrl, "_blank");
+              existingBtn.textContent = lang === "tr" ? "Dashboard'u Aç" : "Open Dashboard";
+            }
+
+            // Copy butonu
+            const copyBtn = document.getElementById("copySuccessLink");
+            if (copyBtn) {
+              const newCopy = copyBtn.cloneNode(true);
+              copyBtn.parentNode.replaceChild(newCopy, copyBtn);
+              newCopy.addEventListener("click", async () => {
+                const textToCopy = window.location.origin.split("/chat")[0] + "/" + dashUrl.replace("../", "");
+                try { await navigator.clipboard.writeText(textToCopy); }
+                catch { /* ignore */ }
+                const origHtml = newCopy.innerHTML;
+                newCopy.innerHTML = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 8l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                setTimeout(() => { newCopy.innerHTML = origHtml; }, 2000);
+                showToast("success", lang === "tr" ? "Link kopyalandı" : "Link copied");
+              });
+            }
+
+            // Kapat butonu
+            const closeOverlay = document.getElementById("closeSuccessOverlay");
+            if (closeOverlay) {
+              const newClose = closeOverlay.cloneNode(true);
+              closeOverlay.parentNode.replaceChild(newClose, closeOverlay);
+              newClose.addEventListener("click", () => {
+                overlay.style.display = "none";
+                linkInput.value = "";
+                // eski dashboard butonunu temizle
+                overlay.querySelector(".btn-open-dashboard")?.remove();
+              });
+            }
+          }
+        }
+
+        // E-posta bildirimi
+        if (shareWithEmails.length > 0) {
+          showToast("success", lang === "tr"
+            ? `Rapor ${shareWithEmails.length} alıcıya gönderildi.`
+            : `Report sent to ${shareWithEmails.length} recipients.`);
+        }
+
+        showToast("success", lang === "tr"
+          ? "Rapor başarıyla oluşturuldu."
+          : "Report generated successfully.");
+
+      } catch (error) {
+        showToast("error", lang === "tr"
+          ? `Rapor oluşturma hatası: ${error.message}`
+          : `Report generation error: ${error.message}`);
+      } finally {
+        if (els.btnGenerateReport) els.btnGenerateReport.disabled = false;
+      }
+    };
+
+    // Event listener'ları temiz bağla (clone trick)
+    const newCloseBtn = closeBtn.cloneNode(true);
+    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+    newCloseBtn.addEventListener("click", closeModal);
+
+    const newCancelBtn = cancelBtn.cloneNode(true);
+    cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+    newCancelBtn.addEventListener("click", closeModal);
+
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+    newConfirmBtn.addEventListener("click", handleGenerate);
+
+    // Modal dışına tıklayınca kapat
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+  });
+
   els.btnClearHistory?.addEventListener("click", () => {
-    if (confirm("Tüm konuşma geçmişi silinecek. Devam edilsin mi?")) {
-      clearHistory(); showToast("info", "Geçmiş temizlendi");
+    const msg = typeof getLanguage === "function" && getLanguage() === "tr" 
+      ? "Tüm konuşma geçmişi silinecek. Devam edilsin mi?" 
+      : "All conversation history will be deleted. Continue?";
+    if (confirm(msg)) {
+      clearHistory(); showToast("info", typeof getLanguage === "function" && getLanguage() === "tr" ? "Geçmiş temizlendi" : "History cleared");
     }
   });
 
@@ -1100,6 +1338,11 @@ function _bindEvents() {
       els.questionInput.focus();
     });
   });
+
+  // Auth butonları auth.js tarafından yönetiliyor — burada ekstra listener bağlama
+
+  // Initialize auth UI state
+  if (typeof updateAuthUI === "function") updateAuthUI();
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1109,7 +1352,9 @@ function _boot() {
   _initEls();
   _switchSource("postgresql");
   _setDisconnected();
-  restoreHistory();
+  // Don't restore history on boot - start fresh with welcome state
+  // restoreHistory();
+  _setEmptyVisible(true);
   _bindEvents();
 
   // Session restore (sayfa yenilenince)
