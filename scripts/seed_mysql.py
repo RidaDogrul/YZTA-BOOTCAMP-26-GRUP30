@@ -21,7 +21,7 @@ load_dotenv(project_root / ".env")
 
 # Seed işlemi YAZMA gerektirir; bu yüzden read-only connector yerine
 # doğrudan kendi bağlantımızı kuruyoruz.
-MYSQL_URL = os.getenv("MYSQL_URL", "mysql+pymysql://root:test@localhost:3306/demo")
+MYSQL_URL = os.getenv("MYSQL_URL", "mysql+pymysql://root:3456@localhost:3307/testdb")
 
 
 def seed() -> None:
