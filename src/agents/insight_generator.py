@@ -328,7 +328,7 @@ def _extract_json(text: str) -> dict[str, Any]:
         raise ValueError(f"JSON parse hatası: {exc}. Ham metin: {json_str[:200]}")
 
 
-def _detect_language(text: str) -> str:
+def _detect_language(text: str) -> Language:
     """
     Metnin dilini tespit eder (geliştirilmiş Türkçe/İngilizce ayrımı).
     
