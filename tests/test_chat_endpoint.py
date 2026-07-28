@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 from fastapi.testclient import TestClient
 
 from main import app
@@ -14,25 +14,18 @@ def clear_chat_cache():
     yield
     query_cache.clear()
 
-@pytest.mark.skip(reason="Chat mock akıştan gerçek akışa geçti; test güncellenmeli")
-def test_chat_ask_returns_mock_response():
+
+def test_chat_ask_rejects_unknown_session():
     response = client.post(
         "/api/v1/chat/ask",
         json={
-            "session_id": "sess_abc123",
+            "session_id": "sess_unknown",
             "question": "Son 3 ayda en yüksek ciroyu hangi kategori üretti?",
         },
     )
 
-    assert response.status_code == 200
-
-    data = response.json()
-
-    assert data["status"] == "success"
-    assert "summary" in data
-    assert "sql_query" in data
-    assert isinstance(data["chart_data"], list)
-    assert isinstance(data["action_plan"], list)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Oturum bulunamadı veya süresi doldu."
 
 
 def test_chat_ask_rejects_empty_session_id():
@@ -71,28 +64,28 @@ def test_chat_ask_requires_question_field():
 
     assert response.status_code == 422
 
-@pytest.mark.skip(reason="Chat mock akıştan gerçek akışa geçti; test güncellenmeli")
-def test_chat_ask_stores_response_in_cache():
+
+def test_chat_ask_does_not_store_response_for_unknown_session():
     payload = {
-        "session_id": "sess_abc123",
+        "session_id": "sess_unknown",
         "question": "Son 3 ayda en yüksek ciroyu hangi kategori üretti?",
     }
 
     response = client.post("/api/v1/chat/ask", json=payload)
 
-    assert response.status_code == 200
+    assert response.status_code == 404
 
     cache_key = make_cache_key(
         "chat",
         payload["session_id"],
         payload["question"],
+        "[]",
     )
     cached_response = query_cache.get(cache_key)
 
-    assert isinstance(cached_response, ChatResponse)
-    assert cached_response.status == "success"
+    assert cached_response is None
 
-@pytest.mark.skip(reason="Chat mock akıştan gerçek akışa geçti; test güncellenmeli")
+
 def test_chat_ask_returns_cached_response_when_available():
     payload = {
         "session_id": "sess_cached",
@@ -111,6 +104,7 @@ def test_chat_ask_returns_cached_response_when_available():
         "chat",
         payload["session_id"],
         payload["question"],
+        "[]",
     )
     query_cache.set(cache_key, cached_response)
 

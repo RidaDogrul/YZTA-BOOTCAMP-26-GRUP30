@@ -1,5 +1,5 @@
 """Chat (doğal dil sorgu) endpoint'leri için request/response modelleri."""
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -74,10 +74,26 @@ class ChatRequest(BaseModel):
     }
 
 
+
+class SourceQueryInfo(BaseModel):
+    """Standard response metadata for a queried data source."""
+
+    source_id: str = Field(..., description="Queried source id")
+    alias: str | None = Field(default=None, description="Human-readable source alias")
+    source_type: str = Field(..., description="Source type")
+    success: bool = Field(..., description="Whether the source query succeeded")
+    row_count: int = Field(default=0, ge=0, description="Number of rows returned by the source")
+    error: str | None = Field(default=None, description="Source query error message, if any")
+
+
 class ChatResponse(BaseModel):
     """Ajan'ın chat sorusuna verdiği yapılandırılmış yanıt."""
 
-    status: str = Field(..., description="İşlem durumu", examples=["success"])
+    status: Literal["success", "partial", "error"] = Field(
+        ...,
+        description="Response status",
+        examples=["success", "partial", "error"],
+    )
     summary: str = Field(
         ...,
         description="Türkçe özet cevap",
@@ -96,7 +112,7 @@ class ChatResponse(BaseModel):
         description="Önerilen aksiyon maddeleri",
     )
     # Çoklu kaynak sorgu meta bilgisi
-    sources_queried: list[dict[str, Any]] = Field(
+    sources_queried: list[SourceQueryInfo] = Field(
         default_factory=list,
         description=(
             "Her kaynağın sorgu özeti: "
