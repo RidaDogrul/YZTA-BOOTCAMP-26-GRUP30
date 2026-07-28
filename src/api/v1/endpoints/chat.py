@@ -321,7 +321,6 @@ def _invoke_insight_llm(
     system_prompt: str | None = None,
 ) -> dict[str, Any]:
     """LLM'i çağırır ve yanıtı parse eder. Hata durumunda fallback dict döner."""
-    from src.agents.prompts import INSIGHT_GENERATOR_PROMPT_TR
     prompt = system_prompt or INSIGHT_GENERATOR_PROMPT_TR
     try:
         response = llm.invoke([
