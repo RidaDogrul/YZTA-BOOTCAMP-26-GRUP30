@@ -36,6 +36,14 @@ class ChatRequest(BaseModel):
         min_length=3,
         examples=["Önümüzdeki ay en çok satış yapılacak kategori hangisi?"],
     )
+    language: str | None = Field(
+        default=None,
+        description=(
+            "Yanıt dili: 'tr' veya 'en'. "
+            "Belirtilmezse soru metninden otomatik tespit edilir."
+        ),
+        examples=["tr", "en"],
+    )
     # Çoklu kaynak desteği — boşsa sadece birincil kaynak kullanılır
     source_selection: list[SourceTableSelection] = Field(
         default_factory=list,
@@ -94,6 +102,15 @@ class ChatResponse(BaseModel):
             "Her kaynağın sorgu özeti: "
             "[{source_id, alias, source_type, success, row_count, error}, ...]"
         ),
+    )
+    # Rapor paylaşım bilgileri (opsiyonel)
+    report_id: str | None = Field(
+        default=None,
+        description="Rapor benzersiz kimliği (rapor oluşturma durumunda)",
+    )
+    public_link: str | None = Field(
+        default=None,
+        description="Herkese açık rapor linki (make_public=true durumunda)",
     )
 
     model_config = {

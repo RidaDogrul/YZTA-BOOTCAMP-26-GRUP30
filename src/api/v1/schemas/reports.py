@@ -4,6 +4,17 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 
+class GenerateReportRequest(BaseModel):
+    """Rapor oluşturma isteği."""
+
+    session_id: str = Field(..., description="Oturum kimliği")
+    question: str = Field(default="", description="Rapor sorusu (boş olabilir)")
+    language: str = Field(default="tr", description="Rapor dili (tr/en)")
+    chat_history: list[dict[str, Any]] = Field(default_factory=list, description="Sohbet geçmişi")
+    share_with_emails: list[str] = Field(default_factory=list, description="Raporun paylaşılacağı email adresleri")
+    make_public: bool = Field(default=False, description="Raporun herkese açık olup olmadığı")
+
+
 class ReportSummary(BaseModel):
     """Rapor listesinde gösterilen özet kart."""
 
