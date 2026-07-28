@@ -8,11 +8,13 @@ Yeni endpoint eklerken:
 """
 from fastapi import APIRouter
 
-from src.api.v1.endpoints import beta, chat, connect_db, health, reports
+from src.api.v1.endpoints import auth, beta, chat, connect_db, health, reports
+
 
 api_router = APIRouter()
 
 api_router.include_router(health.router, tags=["Health"])
+api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
 api_router.include_router(
     connect_db.router,
     prefix="/connect-db",
