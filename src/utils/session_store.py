@@ -34,6 +34,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from src.utils.logger import get_logger
+from src.connectors.base import BaseConnector
 
 logger = get_logger(__name__)
 
@@ -182,7 +183,7 @@ class SessionStore:
     # ------------------------------------------------------------------
     # Connector erişimi
     # ------------------------------------------------------------------
-    def get_connector(self, session_id: str) -> object | None:
+    def get_connector(self, session_id: str) -> BaseConnector  | None:
         """
         Geriye dönük uyumluluk — birincil (ilk) konnektörü döndürür.
         """
