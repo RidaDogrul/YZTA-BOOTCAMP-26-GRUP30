@@ -1,7 +1,18 @@
 """Rapor listeleme ve detay endpoint'leri için request/response modelleri."""
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+
+class GenerateReportRequest(BaseModel):
+    """Rapor oluşturma isteği."""
+
+    session_id: str = Field(..., description="Oturum kimliği")
+    question: str = Field(default="", description="Rapor sorusu (boş olabilir)")
+    language: Literal["tr", "en"] = Field(default="tr", description="Rapor dili (tr/en)")
+    chat_history: list[dict[str, Any]] = Field(default_factory=list, description="Sohbet geçmişi")
+    share_with_emails: list[str] = Field(default_factory=list, description="Raporun paylaşılacağı email adresleri")
+    make_public: bool = Field(default=False, description="Raporun herkese açık olup olmadığı")
 
 
 class ReportSummary(BaseModel):

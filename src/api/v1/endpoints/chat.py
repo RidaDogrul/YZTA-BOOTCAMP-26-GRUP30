@@ -36,11 +36,16 @@ from fastapi import APIRouter, HTTPException, status
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.agents.federated_orchestrator import FederatedOrchestrator, FederatedResult
+from src.agents.insight_generator import _detect_language as _detect_lang
 from src.agents.llm import get_llm
 from src.agents.orchestrator import Orchestrator, OrchestratorResult
-from src.agents.prompts import INSIGHT_GENERATOR_SYSTEM_PROMPT
+from src.agents.prompts import (
+    INSIGHT_GENERATOR_PROMPT_EN,
+    INSIGHT_GENERATOR_PROMPT_TR,
+)
 from src.api.v1.schemas.chat import ChatRequest, ChatResponse
 from src.api.v1.schemas.common import ErrorResponse
+from src.security.anonymizer import PIIAnonymizer
 from src.utils.cache import make_cache_key, query_cache
 from src.utils.logger import get_logger
 from src.utils.metrics import log_token_usage
@@ -50,6 +55,15 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 CHAT_CACHE_TTL_SECONDS = 300.0
+
+# PIIAnonymizer tek instance (pahalı init — spaCy model yükleme)
+try:
+    _pii = PIIAnonymizer()
+    _PII_AVAILABLE = True
+except Exception as _pii_err:
+    logger.warning("PIIAnonymizer yüklenemedi — PII maskeleme devre dışı", extra={"error": str(_pii_err)})
+    _pii = None  # type: ignore[assignment]
+    _PII_AVAILABLE = False
 
 
 # ---------------------------------------------------------------------------
@@ -95,19 +109,37 @@ def _df_to_chart_data(df: pd.DataFrame | None) -> list[dict[str, Any]]:
         return []
 
 
-def _fallback_response(question: str, error_msg: str) -> ChatResponse:
-    return ChatResponse(
-        status="error",
-        summary=(
-            "Sorgunuz işlenirken bir sorun oluştu. "
-            "Lütfen veri kaynağı bağlantısını kontrol edip tekrar deneyin.\n\n"
-            f"Teknik detay: {error_msg}"
-        ),
-        sql_query=None,
-        chart_data=[],
-        action_plan=[],
-        sources_queried=[],
-    )
+def _mask_pii_df(df: "pd.DataFrame") -> "pd.DataFrame":
+    """DataFrame'deki PII sütunlarını maskeler; anonymizer yoksa orijinali döner."""
+    if _PII_AVAILABLE and _pii is not None:
+        try:
+            return _pii.anonymize_dataframe(df)
+        except Exception as exc:
+            logger.warning("PII maskeleme hatası (DataFrame)", extra={"error": str(exc)})
+    return df
+
+
+def _mask_pii_rows(rows: list[dict]) -> list[dict]:
+    """chart_data gibi dict listesindeki PII değerlerini maskeler."""
+    if not _PII_AVAILABLE or _pii is None or not rows:
+        return rows
+    try:
+        return [_pii.anonymize_dict(row) for row in rows]
+    except Exception as exc:
+        error_msg = str(exc)
+        
+        return ChatResponse(
+            status="error",
+            summary=(
+                "Sorgunuz işlenirken bir sorun oluştu. "
+                "Lütfen veri kaynağı bağlantısını kontrol edip tekrar deneyin.\n\n"
+                f"Teknik detay: {error_msg}"
+            ),
+            sql_query=None,
+            chart_data=[],
+            action_plan=[],
+            sources_queried=[],
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -118,9 +150,16 @@ def _generate_insight_from_orchestrator(
     question: str,
     orch_result: OrchestratorResult,
     source_alias: str = "Ana Kaynak",
+    lang: str | None = None,
 ) -> ChatResponse:
     """Tek kaynak OrchestratorResult'tan ChatResponse üretir."""
+    # Dil: açıkça verilmişse kullan, yoksa sorudan tespit et
+    effective_lang = lang if lang in ("tr", "en") else _detect_lang(question)
+    system_prompt = INSIGHT_GENERATOR_PROMPT_TR if effective_lang == "tr" else INSIGHT_GENERATOR_PROMPT_EN
     llm = get_llm()
+
+    # PII maskeleme — önizleme için
+    clean_df = _mask_pii_df(orch_result.cleaned_df) if not orch_result.cleaned_df.empty else orch_result.cleaned_df
 
     # Veri önizlemesi
     if orch_result.source == "s3" and orch_result.s3_tables:
@@ -130,19 +169,21 @@ def _generate_insight_from_orchestrator(
         if wants_merge:
             combined = pd.concat(list(orch_result.s3_tables.values()),
                                  ignore_index=True, sort=False)
+            combined = _mask_pii_df(combined)
             data_preview = f"[Tablolar birleştirildi — toplam {len(combined)} satır]\n"
             data_preview += combined.head(20).to_csv(index=False)
         else:
             parts: list[str] = []
             for name, df in orch_result.s3_tables.items():
+                masked = _mask_pii_df(df)
                 parts.append(
-                    f"=== TABLO: {name} ({len(df)} satır, "
-                    f"sütunlar: {', '.join(str(c) for c in df.columns if c != '_source_file')}) ===\n"
-                    + df.drop(columns=["_source_file"], errors="ignore").head(10).to_csv(index=False)
+                    f"=== TABLO: {name} ({len(masked)} satır, "
+                    f"sütunlar: {', '.join(str(c) for c in masked.columns if c != '_source_file')}) ===\n"
+                    + masked.drop(columns=["_source_file"], errors="ignore").head(10).to_csv(index=False)
                 )
             data_preview = "\n".join(parts)
-    elif not orch_result.cleaned_df.empty:
-        data_preview = orch_result.cleaned_df.head(20).to_csv(index=False)
+    elif not clean_df.empty:
+        data_preview = clean_df.head(20).to_csv(index=False)
     else:
         data_preview = "(Veri yok)"
 
@@ -162,12 +203,14 @@ def _generate_insight_from_orchestrator(
         f"Veri önizlemesi:\n{data_preview}"
     )
 
-    parsed = _invoke_insight_llm(llm, user_content)
+    parsed = _invoke_insight_llm(llm, user_content, system_prompt=system_prompt)
 
     chart_data = parsed.get("chart_data") or []
-    if not chart_data and not orch_result.cleaned_df.empty:
-        chart_data = _df_to_chart_data(orch_result.cleaned_df)
+    if not chart_data and not clean_df.empty:
+        chart_data = _df_to_chart_data(clean_df)
 
+    # chart_data'da PII kalmasın
+    chart_data = _mask_pii_rows(chart_data)
     action_plan = _normalize_action_plan(parsed.get("action_plan"))
 
     return ChatResponse(
@@ -192,11 +235,14 @@ def _generate_insight_from_orchestrator(
 def _generate_insight_from_federated(
     question: str,
     fed_result: FederatedResult,
+    lang: str | None = None,
 ) -> ChatResponse:
     """Çoklu kaynak FederatedResult'tan ChatResponse üretir."""
+    effective_lang = lang if lang in ("tr", "en") else _detect_lang(question)
+    system_prompt = INSIGHT_GENERATOR_PROMPT_TR if effective_lang == "tr" else INSIGHT_GENERATOR_PROMPT_EN
     llm = get_llm()
 
-    # Her kaynaktan gelen verinin kısa önizlemesini hazırla
+    # Her kaynaktan gelen verinin kısa önizlemesini hazırla — PII maskeli
     previews: list[str] = []
     for pr in fed_result.per_source:
         if not pr.success or pr.df.empty:
@@ -205,6 +251,7 @@ def _generate_insight_from_federated(
             columns=[c for c in pr.df.columns if str(c).startswith("_source")],
             errors="ignore",
         )
+        clean_df = _mask_pii_df(clean_df)
         previews.append(
             f"=== KAYNAK: {pr.alias} ({pr.source_type}) — {pr.row_count} satır ===\n"
             f"Sorgu: {pr.query}\n"
@@ -231,12 +278,13 @@ def _generate_insight_from_federated(
             "Yalnızca başarılı kaynaklardaki veriyi analiz et."
         )
 
-    parsed = _invoke_insight_llm(llm, user_content)
+    parsed = _invoke_insight_llm(llm, user_content, system_prompt=system_prompt)
 
     chart_data = parsed.get("chart_data") or []
     if not chart_data and not fed_result.combined_df.empty:
-        chart_data = _df_to_chart_data(fed_result.combined_df)
+        chart_data = _df_to_chart_data(_mask_pii_df(fed_result.combined_df))
 
+    chart_data = _mask_pii_rows(chart_data)
     action_plan = _normalize_action_plan(parsed.get("action_plan"))
 
     # Birleşik SQL özeti
@@ -267,11 +315,16 @@ def _generate_insight_from_federated(
     )
 
 
-def _invoke_insight_llm(llm, user_content: str) -> dict[str, Any]:
+def _invoke_insight_llm(
+    llm,
+    user_content: str,
+    system_prompt: str | None = None,
+) -> dict[str, Any]:
     """LLM'i çağırır ve yanıtı parse eder. Hata durumunda fallback dict döner."""
+    prompt = system_prompt or INSIGHT_GENERATOR_PROMPT_TR
     try:
         response = llm.invoke([
-            SystemMessage(content=INSIGHT_GENERATOR_SYSTEM_PROMPT),
+            SystemMessage(content=prompt),
             HumanMessage(content=user_content),
         ])
         log_token_usage(response)
@@ -309,6 +362,14 @@ def _normalize_action_plan(raw) -> list[str]:
 # Endpoint
 # ---------------------------------------------------------------------------
 
+def _fallback_response(question, reason_message):
+    return {
+        "status": "fallback",
+        "question": question,
+        "message": reason_message,
+        "answer": "Üzgünüm, sorunuzu yanıtlamak için uygun bir kaynak bulunamadı."
+    }
+
 @router.post(
     "/ask",
     response_model=ChatResponse,
@@ -335,6 +396,15 @@ def ask_question(payload: ChatRequest) -> ChatResponse:
     if not payload.question.strip():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail="question boş olamaz.")
+
+    # ── Dil belirleme: frontend'den gelen kesin değer öncelikli ──
+    # payload.language ("tr"/"en") varsa kullan,
+    # yoksa soru metninden otomatik tespit et.
+    effective_lang: str
+    if payload.language and payload.language in ("tr", "en"):
+        effective_lang = payload.language
+    else:
+        effective_lang = _detect_lang(payload.question)
 
     # ── Cache ────────────────────────────────────────────────────
     cache_key = _build_cache_key(payload)
@@ -418,7 +488,8 @@ def ask_question(payload: ChatRequest) -> ChatResponse:
 
         try:
             response = _generate_insight_from_orchestrator(
-                payload.question, orch_result, source_alias=alias
+                payload.question, orch_result, source_alias=alias,
+                lang=effective_lang,
             )
         except Exception as exc:
             logger.error("Insight generator hatası", extra={"error": str(exc)})
@@ -467,7 +538,9 @@ def ask_question(payload: ChatRequest) -> ChatResponse:
             )
 
         try:
-            response = _generate_insight_from_federated(payload.question, fed_result)
+            response = _generate_insight_from_federated(
+                payload.question, fed_result, lang=effective_lang,
+            )
         except Exception as exc:
             logger.error("Federated insight hatası", extra={"error": str(exc)})
             response = ChatResponse(

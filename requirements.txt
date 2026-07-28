@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 python-dotenv
-pydantic
+pydantic[email]
 langchain
 langchain-google-genai
 sqlalchemy
@@ -29,3 +29,6 @@ statsmodels
 scikit-learn
 
 PyJWT>=2.8,<3
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+reportlab

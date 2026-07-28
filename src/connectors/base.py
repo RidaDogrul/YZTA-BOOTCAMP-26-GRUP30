@@ -1,10 +1,8 @@
 """
+
 Tüm veritabanı konnektörleri için ortak temel sınıf.
 postgres.py ve mysql.py'nin PAYLAŞTIĞI mantık burada toplanır; alt sınıflar
 yalnızca kendi bağlantı adreslerini (db_url) sağlar.
-
-Böylece bağlan / kapat / test et / şema çıkar / SELECT çalıştır mantığı
-tek yerde yazılır, her veritabanında tekrar edilmez.
 """
 from __future__ import annotations
 
@@ -111,10 +109,8 @@ class BaseConnector(ABC):
             return {"ok": False, "message": f"Bağlantı hatası: {exc}"}
 
     def extract_schema(self) -> dict[str, Any]:
-        """Tablo, sütun ve ilişki meta-verisini çıkarır."""
+        """Tablo, sütun ve ilişki meta-verisini çıkarır (schema_extractor'a devreder)."""
         try:
-            # MySQL için db_url'den şema adını çıkar ve geç
-            # (None geçilince SQLAlchemy SQLite fallback sorgusu üretir)
             return extract_schema(self.db_url)
         except SQLAlchemyError as exc:
             raise RuntimeError(f"Şema çıkarılamadı: {exc}") from exc
