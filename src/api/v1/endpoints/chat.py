@@ -126,20 +126,20 @@ def _mask_pii_rows(rows: list[dict]) -> list[dict]:
     try:
         return [_pii.anonymize_dict(row) for row in rows]
     except Exception as exc:
-        logger.warning("PII maskeleme hatası (rows)", extra={"error": str(exc)})
-        return rows
-    return ChatResponse(
-        status="error",
-        summary=(
-            "Sorgunuz işlenirken bir sorun oluştu. "
-            "Lütfen veri kaynağı bağlantısını kontrol edip tekrar deneyin.\n\n"
-            f"Teknik detay: {error_msg}"
-        ),
-        sql_query=None,
-        chart_data=[],
-        action_plan=[],
-        sources_queried=[],
-    )
+        error_msg = str(exc)
+        
+        return ChatResponse(
+            status="error",
+            summary=(
+                "Sorgunuz işlenirken bir sorun oluştu. "
+                "Lütfen veri kaynağı bağlantısını kontrol edip tekrar deneyin.\n\n"
+                f"Teknik detay: {error_msg}"
+            ),
+            sql_query=None,
+            chart_data=[],
+            action_plan=[],
+            sources_queried=[],
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -321,7 +321,6 @@ def _invoke_insight_llm(
     system_prompt: str | None = None,
 ) -> dict[str, Any]:
     """LLM'i çağırır ve yanıtı parse eder. Hata durumunda fallback dict döner."""
-    from src.agents.prompts import INSIGHT_GENERATOR_PROMPT_TR
     prompt = system_prompt or INSIGHT_GENERATOR_PROMPT_TR
     try:
         response = llm.invoke([
@@ -362,6 +361,14 @@ def _normalize_action_plan(raw) -> list[str]:
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
+
+def _fallback_response(question, reason_message):
+    return {
+        "status": "fallback",
+        "question": question,
+        "message": reason_message,
+        "answer": "Üzgünüm, sorunuzu yanıtlamak için uygun bir kaynak bulunamadı."
+    }
 
 @router.post(
     "/ask",

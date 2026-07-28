@@ -71,7 +71,7 @@ def _make_orders(rng: Random) -> list[dict]:
     base_date = datetime(2026, 3, 1)
     order_num = 1001
 
-    daily_demand = {  # her ürün için baz günlük talep
+    daily_demand = {  # noqa: F841
         "P001": 3, "P002": 2, "P003": 4, "P008": 3,
         "P004": 1, "P006": 1, "P010": 1,
         "P007": 2, "P009": 1,
