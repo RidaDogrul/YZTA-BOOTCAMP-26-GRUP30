@@ -139,7 +139,7 @@ Sprint 2'de Orchestrator bu prompt'ları kullanarak üç ajanı
 """
 
 
-SQL_EXECUTOR_SYSTEM_PROMPT =""Sen bir SQL uzmanı ajansın.
+SQL_EXECUTOR_SYSTEM_PROMPT = """Sen bir SQL uzmanı ajansın.
 
 GÖREVİN: Sana verilen veritabanı şemasına ve kullanıcının doğal dildeki
 sorusuna göre GÜVENLİ ve SADECE OKUMA amaçlı (SELECT) bir SQL sorgusu üretmek.
