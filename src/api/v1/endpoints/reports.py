@@ -31,7 +31,6 @@ from src.utils.session_store import session_store
 
 import base64
 import os
-from typing import Optional
 
 import resend
 from pydantic import BaseModel
