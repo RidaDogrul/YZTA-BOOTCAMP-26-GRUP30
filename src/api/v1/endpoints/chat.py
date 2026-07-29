@@ -126,7 +126,7 @@ def _mask_pii_rows(rows: list[dict]) -> list[dict]:
     try:
         return [_pii.anonymize_dict(row) for row in rows]
     except Exception as exc:
-        errror_msg = str(exc)
+        error_msg = str(exc)
         
         return ChatResponse(
             status="error",
@@ -321,7 +321,6 @@ def _invoke_insight_llm(
     system_prompt: str | None = None,
 ) -> dict[str, Any]:
     """LLM'i çağırır ve yanıtı parse eder. Hata durumunda fallback dict döner."""
-    from src.agents.prompts import INSIGHT_GENERATOR_PROMPT_TR
     prompt = system_prompt or INSIGHT_GENERATOR_PROMPT_TR
     try:
         response = llm.invoke([
@@ -372,6 +371,14 @@ def _fallback_response(question, reason_message):
 
 
 
+
+def _fallback_response(question, reason_message):
+    return {
+        "status": "fallback",
+        "question": question,
+        "message": reason_message,
+        "answer": "Üzgünüm, sorunuzu yanıtlamak için uygun bir kaynak bulunamadı."
+    }
 
 @router.post(
     "/ask",
