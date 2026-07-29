@@ -1,504 +1,364 @@
 /**
- * dashboard.js — Report Dashboard
- *
- * URL formatları:
- *   ?report_id=rpt_abc123               → authenticated (JWT gerekebilir)
- *   ?public_id=rpt_abc123              → herkese açık
- *
- * Backend endpoints:
- *   GET /api/v1/reports/public/{id}    → public (auth gereksiz)
+ * dashboard.js — Rapor listeleme dashboard'u
+ * Raporları localStorage'dan okur, listeler, filtreler.
+ * PDF/Excel'i tarayıcıda üretir, mail'i backend'e gönderir.
  */
 
 const API_BASE = "http://localhost:8000/api/v1";
+const REPORTS_KEY = "nexus_reports"; // raporların saklandığı yer
 
-/* ─── Yardımcı fonksiyonlar ───────────────────────────────── */
+let allReports = []; // tüm raporlar (filtresiz)
 
-function _esc(s) {
-  return String(s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
-function _formatDate(iso) {
-  if (!iso) return "—";
+/* ─── Raporları yükle ─────────────────────────────────────── */
+function loadReports() {
   try {
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, {
-      year: "numeric", month: "long", day: "numeric",
-      hour: "2-digit", minute: "2-digit",
-    });
-  } catch { return iso; }
-}
-
-function _formatNumber(n) {
-  if (typeof n !== "number") return String(n);
-  if (Number.isInteger(n)) return n.toLocaleString();
-  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
-}
-
-function showToast(msg, type = "info") {
-  const container = document.getElementById("toastContainer");
-  if (!container) return;
-  const icons = {
-    success: `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10l5 5 8-8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-    error:   `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><path d="M10 6v4M10 14h.01" stroke-linecap="round"/></svg>`,
-    info:    `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10" cy="10" r="8"/><path d="M10 10v4M10 6h.01" stroke-linecap="round"/></svg>`,
-  };
-  const toast = document.createElement("div");
-  toast.className = `toast ${type}`;
-  toast.innerHTML = `
-    <span class="toast-icon">${icons[type] || icons.info}</span>
-    <span class="toast-content">${_esc(msg)}</span>`;
-  container.appendChild(toast);
-  requestAnimationFrame(() => toast.classList.add("show"));
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.remove(), 400);
-  }, 4000);
-}
-
-/* ─── Durum yönetimi ──────────────────────────────────────── */
-
-function showLoading() {
-  document.getElementById("loadingState").style.display = "flex";
-  document.getElementById("errorState").classList.add("hidden");
-  document.getElementById("reportContainer").classList.add("hidden");
-}
-
-function showError(message) {
-  document.getElementById("loadingState").style.display = "none";
-  document.getElementById("errorState").classList.remove("hidden");
-  document.getElementById("reportContainer").classList.add("hidden");
-  document.getElementById("errorMessage").textContent = message;
-}
-
-function showReport() {
-  document.getElementById("loadingState").style.display = "none";
-  document.getElementById("errorState").classList.add("hidden");
-  document.getElementById("reportContainer").classList.remove("hidden");
-}
-
-/* ─── API çağrısı ─────────────────────────────────────────── */
-
-async function fetchReport(reportId, isPublic) {
-  const endpoint = isPublic
-    ? `/reports/public/${encodeURIComponent(reportId)}`
-    : `/reports/${encodeURIComponent(reportId)}`;
-
-  const headers = { "Content-Type": "application/json" };
-
-  // Eğer JWT token varsa Authorization başlığı ekle
-  const token = localStorage.getItem("nexus_auth_token");
-  if (token && !isPublic) {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
-  const res = await fetch(`${API_BASE}${endpoint}`, { headers });
-
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(data.detail || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-/* ─── Dashboard render fonksiyonları ─────────────────────── */
-
-function renderReportHeader(report) {
-  // Başlık
-  const titleEl = document.getElementById("reportTitle");
-  if (titleEl) {
-    titleEl.textContent = report.title || "Data Analysis Report";
-  }
-
-  // Tarih
-  const dateEl = document.getElementById("reportDate");
-  if (dateEl) {
-    dateEl.textContent = _formatDate(report.created_at || new Date().toISOString());
-  }
-
-  // Kaynak bilgisi
-  const sourceEl = document.getElementById("reportSource");
-  if (sourceEl && report.sources_queried?.length) {
-    const src = report.sources_queried[0];
-    sourceEl.textContent = `${src.alias || src.source_type} · ${src.row_count?.toLocaleString() ?? "—"} rows`;
-  }
-}
-
-function renderSummary(summary) {
-  const el = document.getElementById("summaryContent");
-  if (!el) return;
-  try {
-    el.innerHTML = typeof marked !== "undefined"
-      ? marked.parse(summary)
-      : `<p>${_esc(summary)}</p>`;
+    const raw = localStorage.getItem(REPORTS_KEY);
+    allReports = raw ? JSON.parse(raw) : [];
   } catch {
-    el.innerHTML = `<p>${_esc(summary)}</p>`;
+    allReports = [];
   }
+  // En yeni rapor en üstte
+  allReports.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
-function renderMetrics(report) {
-  const section = document.getElementById("metricsSection");
-  const grid = document.getElementById("metricsGrid");
-  if (!section || !grid) return;
+/* ─── Filtrele ve çiz ─────────────────────────────────────── */
+function renderReports() {
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const source = document.getElementById("sourceFilter").value;
 
-  const cards = [];
+  const filtered = allReports.filter((r) => {
+    const matchText =
+      (r.title || "").toLowerCase().includes(search) ||
+      (r.summary || "").toLowerCase().includes(search);
+    const matchSource = !source || r.source_type === source;
+    return matchText && matchSource;
+  });
 
-  // sources_queried'den metrik kartları üret
-  if (report.sources_queried?.length) {
-    report.sources_queried.forEach(src => {
-      if (src.row_count != null) {
-        cards.push({
-          label: `${src.alias || src.source_type} Rows`,
-          value: _formatNumber(src.row_count),
-          change: null,
-          success: src.success,
-        });
-      }
-    });
+  const grid = document.getElementById("reportGrid");
+  const empty = document.getElementById("emptyState");
+
+  if (!filtered.length) {
+    grid.innerHTML = "";
+    empty.style.display = "block";
+    return;
   }
+  empty.style.display = "none";
 
-  // chart_data'dan sayısal metrikler çıkar
-  if (report.chart_data?.length) {
-    const data = report.chart_data;
-    const keys = Object.keys(data[0] || {});
-    const numericKeys = keys.filter(k => {
-      const v = data[0][k];
-      return typeof v === "number" && !["id", "index"].includes(k.toLowerCase());
-    });
+  grid.innerHTML = filtered
+    .map(
+      (r, i) => `
+    <div class="card">
+      <div class="card-title">${esc(r.title || "İsimsiz Rapor")}</div>
+      <div class="card-meta">
+        ${r.source_type ? `<span class="badge">${esc(r.source_type)}</span>` : ""}
+        <span>${formatDate(r.created_at)}</span>
+      </div>
+      <div class="card-summary">${esc(r.summary || "")}</div>
+      <div class="card-actions">
+        <button class="btn btn-view"  onclick="openDetail(${i})">Görüntüle</button>
+        <button class="btn btn-pdf"   onclick="downloadPDF(${i})">PDF</button>
+        <button class="btn btn-excel" onclick="downloadExcel(${i})">Excel</button>
+        <button class="btn btn-mail"  onclick="toggleMail(${i})">Mail</button>
+      </div>
+      <div class="mail-box" id="mailbox-${i}">
+        <input type="email" id="mailinput-${i}" placeholder="ornek@mail.com" />
+        <button class="btn btn-mail" onclick="sendMail(${i})">Gönder</button>
+      </div>
+    </div>`
+    )
+    .join("");
 
-    numericKeys.slice(0, 3).forEach(key => {
-      const values = data.map(d => Number(d[key])).filter(v => !isNaN(v));
-      if (!values.length) return;
-      const sum = values.reduce((a, b) => a + b, 0);
-      const avg = sum / values.length;
-      const max = Math.max(...values);
+  // Filtrelenmiş listeyi index eşleşmesi için sakla
+  window._filtered = filtered;
+}
 
-      cards.push({
-        label: `Total ${_humanLabel(key)}`,
-        value: _formatNumber(Math.round(sum)),
-        change: null,
-      });
-      cards.push({
-        label: `Avg ${_humanLabel(key)}`,
-        value: _formatNumber(Math.round(avg * 100) / 100),
-        change: null,
-      });
-      cards.push({
-        label: `Peak ${_humanLabel(key)}`,
-        value: _formatNumber(max),
-        change: null,
-      });
-    });
-  }
+/* ─── Detay modalı ────────────────────────────────────────── */
+function openDetail(i) {
+  const r = window._filtered[i];
+  const modal = document.getElementById("modalContent");
 
-  if (!cards.length) return;
+  const actions = (r.action_plan || [])
+    .map((a) => `<li>${esc(typeof a === "string" ? a : a.action || "")}</li>`)
+    .join("");
 
-  section.style.display = "";
-  grid.innerHTML = cards.slice(0, 6).map(card => `
-    <div class="metric-card">
-      <div class="metric-label">${_esc(card.label)}</div>
-      <div class="metric-value">${_esc(String(card.value))}</div>
-      ${card.change != null
-        ? `<div class="metric-change ${card.change >= 0 ? "positive" : "negative"}">
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-              ${card.change >= 0
-                ? '<path d="M8 12V4M4 8l4-4 4 4" stroke-linecap="round" stroke-linejoin="round"/>'
-                : '<path d="M8 4v8M4 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/>'
-              }
-            </svg>
-            ${Math.abs(card.change)}%
-          </div>`
+  modal.innerHTML = `
+    <button class="modal-close" onclick="closeModal()">×</button>
+    <h2>${esc(r.title || "Rapor")}</h2>
+    <div class="card-meta">
+      ${r.source_type ? `<span class="badge">${esc(r.source_type)}</span>` : ""}
+      <span>${formatDate(r.created_at)}</span>
+    </div>
+
+    <div class="section">
+      <h3>Özet</h3>
+      <p>${esc(r.summary || "—")}</p>
+    </div>
+
+    ${
+      r.chart_data && r.chart_data.length
+        ? `<div class="section"><h3>Grafik</h3><canvas id="detailChart" height="120"></canvas></div>`
         : ""
-      }
-    </div>`).join("");
-}
-
-function renderChart(reportData) {
-  const section = document.getElementById("chartSection");
-  if (!section) return;
-  if (!reportData.chart_data?.length) return;
-
-  section.style.display = "";
-  const wrapper = document.getElementById("chartWrapper");
-  if (!wrapper) return;
-
-  // chart.js'in renderChart fonksiyonunu kullan (chat modülünden paylaşılan)
-  const chartApi = window.DataCleanroomCharts && window.DataCleanroomCharts.renderChart;
-  if (typeof chartApi === "function") {
-    const canvas = document.getElementById("reportChart");
-    if (canvas) {
-      const container = canvas.parentElement;
-      container.innerHTML = '<canvas id="reportChart"></canvas>';
-      chartApi(container, reportData.chart_data, "dashboard-main");
     }
-  } else {
-    // Fallback: Chart.js doğrudan kullan
-    _renderFallbackChart(reportData.chart_data);
+
+    ${
+      actions
+        ? `<div class="section"><h3>Aksiyon Planı</h3><ul>${actions}</ul></div>`
+        : ""
+    }
+
+    ${
+      r.sql_query
+        ? `<div class="section"><h3>SQL Sorgusu</h3><pre>${esc(r.sql_query)}</pre></div>`
+        : ""
+    }
+  `;
+
+  document.getElementById("modalBg").classList.add("open");
+
+  // Grafiği çiz
+  if (r.chart_data && r.chart_data.length) {
+    drawChart("detailChart", r.chart_data);
   }
 }
 
-function _renderFallbackChart(data) {
-  if (!data?.length) return;
-  const canvas = document.getElementById("reportChart");
+function closeModal() {
+  document.getElementById("modalBg").classList.remove("open");
+}
+
+/* ─── Grafik çiz (Chart.js) ───────────────────────────────── */
+function drawChart(canvasId, data) {
+  const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-
   const keys = Object.keys(data[0]);
-  const numKeys = keys.filter(k => typeof data[0][k] === "number");
-  const labelKey = keys.find(k => !numKeys.includes(k)) || keys[0];
-  if (!numKeys.length) return;
-
-  const PALETTE = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#06b6d4", "#a855f7"];
-  const labels = data.map(r => String(r[labelKey]));
-  const isTime = ["date","month","year","week","day","period"].some(w =>
-    labelKey.toLowerCase().includes(w)
-  );
+  const labelKey = keys.find((k) => typeof data[0][k] !== "number") || keys[0];
+  const valueKeys = keys.filter((k) => typeof data[0][k] === "number");
 
   new Chart(canvas, {
-    type: isTime ? "line" : "bar",
+    type: "bar",
     data: {
-      labels,
-      datasets: numKeys.map((k, i) => ({
-        label: _humanLabel(k),
-        data: data.map(r => Number(r[k])),
-        borderColor: PALETTE[i % PALETTE.length],
-        backgroundColor: PALETTE[i % PALETTE.length] + (isTime ? "22" : "cc"),
-        borderWidth: 2,
-        borderRadius: isTime ? 0 : 5,
-        tension: 0.38,
-        fill: isTime && numKeys.length === 1,
-        pointRadius: data.length < 25 ? 4 : 2,
+      labels: data.map((d) => d[labelKey]),
+      datasets: valueKeys.map((k, idx) => ({
+        label: k,
+        data: data.map((d) => d[k]),
+        backgroundColor: ["#6366f1", "#22c55e", "#f59e0b"][idx % 3],
       })),
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      animation: { duration: 420 },
-      plugins: {
-        legend: {
-          labels: { color: "#94a3b8", font: { size: 11 } },
-        },
-        tooltip: {
-          backgroundColor: "#0d0f1a",
-          titleColor: "#f1f5f9",
-          bodyColor: "#94a3b8",
-        },
-      },
+      plugins: { legend: { labels: { color: "#94a3b8" } } },
       scales: {
-        x: { ticks: { color: "#475569" }, grid: { color: "rgba(255,255,255,.04)" } },
-        y: { ticks: { color: "#475569" }, grid: { color: "rgba(255,255,255,.04)" } },
+        x: { ticks: { color: "#94a3b8" } },
+        y: { ticks: { color: "#94a3b8" } },
       },
     },
   });
 }
 
-function renderActionPlan(actionPlan) {
-  const section = document.getElementById("actionSection");
-  const list = document.getElementById("actionList");
-  if (!section || !list || !actionPlan?.length) return;
 
-  section.style.display = "";
+/* ─── Rapor içeriğini PDF için hazırla (ortak) ─────────────── */
+function buildReportElement(r) {
+  const el = document.createElement("div");
+  el.style.padding = "30px";
+  el.style.fontFamily = "sans-serif";
+  el.style.color = "#111";
+  el.innerHTML = `
+    <h1 style="color:#4f46e5">${esc(r.title || "Rapor")}</h1>
+    <p style="color:#666">${formatDate(r.created_at)} · ${esc(r.source_type || "")}</p>
+    <h3>Özet</h3>
+    <p>${esc(r.summary || "—")}</p>
+  `;
 
-  const priorityOrder = ["high", "medium", "low", ""];
-  list.innerHTML = actionPlan.map((item, i) => {
-    // Öncelik tespiti
-    const text = typeof item === "string" ? item : (item.action || String(item));
-    const priority = typeof item === "object" ? (item.priority || "").toLowerCase() : "";
-    const priorityBadge = ["high", "medium", "low"].includes(priority)
-      ? `<span class="action-priority ${priority}">${priority}</span>`
-      : "";
+  // ── Grafiği resim olarak ekle (varsa) ──
+  if (r.chart_data && r.chart_data.length) {
+    const tempCanvas = document.createElement("canvas");
+    tempCanvas.width = 700;
+    tempCanvas.height = 350;
+    const ctx = tempCanvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
 
-    return `
-      <div class="action-item">
-        <div class="action-number">${i + 1}</div>
-        <div class="action-content">
-          <div class="action-text">${_esc(text)}</div>
-          ${priorityBadge}
-        </div>
-      </div>`;
-  }).join("");
-}
+    const keys = Object.keys(r.chart_data[0]);
+    const labelKey = keys.find((k) => typeof r.chart_data[0][k] !== "number") || keys[0];
+    const valueKeys = keys.filter((k) => typeof r.chart_data[0][k] === "number");
 
-function renderSqlSection(sqlQuery) {
-  const section = document.getElementById("sqlSection");
-  const codeEl = document.getElementById("sqlQuery");
-  if (!section || !codeEl || !sqlQuery) return;
-
-  section.style.display = "";
-  codeEl.textContent = sqlQuery;
-}
-
-/* ─── Collapsible SQL section ─────────────────────────────── */
-
-function _initCollapsible() {
-  const header = document.getElementById("sqlHeader");
-  const content = document.getElementById("sqlContent");
-  if (!header || !content) return;
-
-  header.addEventListener("click", () => {
-    const isCollapsed = content.classList.contains("collapsed");
-    content.classList.toggle("collapsed", !isCollapsed);
-    header.classList.toggle("collapsed", !isCollapsed);
-  });
-}
-
-
-
-/* ─── Export button ───────────────────────────────────────── */
-
-/* ─── Export button → PDF/Excel (backend /reports/export) ─── */
-function _initExportButton(report) {
-  const btn = document.getElementById("btnExport");
-  if (!btn) return;
-
-  btn.addEventListener("click", () => {
-    // Basit bir seçim menüsü göster (PDF / Excel)
-    _showExportMenu(btn, report);
-  });
-}
-
-async function _exportReport(report, format) {
-  try {
-    showToast(`${format.toUpperCase()} hazırlanıyor...`, "info");
-
-    const token = localStorage.getItem("nexus_auth_token");
-    const headers = { "Content-Type": "application/json" };
-    if (token) headers["Authorization"] = `Bearer ${token}`;
-
-    const res = await fetch(`${API_BASE}/reports/export`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({
-        format,
-        title: report.title || "Analiz Raporu",
-        summary: report.summary || "",
-        sql_query: report.sql_query || "",
-        chart_data: report.chart_data || [],
-        action_plan: report.action_plan || [],
-        language: report.language || "tr",
-      }),
+    const chart = new Chart(tempCanvas, {
+      type: "bar",
+      data: {
+        labels: r.chart_data.map((d) => d[labelKey]),
+        datasets: valueKeys.map((k, idx) => ({
+          label: k,
+          data: r.chart_data.map((d) => d[k]),
+          backgroundColor: ["#6366f1", "#22c55e", "#f59e0b"][idx % 3],
+        })),
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend: { labels: { color: "#111" } } },
+        scales: { x: { ticks: { color: "#111" } }, y: { ticks: { color: "#111" } } },
+      },
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `${(report.title || "rapor").replace(/\s+/g, "_")}.${format === "excel" ? "xlsx" : "pdf"}`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-    showToast(`${format.toUpperCase()} indirildi`, "success");
-  } catch (err) {
-    showToast(`İndirme başarısız: ${err.message}`, "error");
+    const img = document.createElement("img");
+    img.src = tempCanvas.toDataURL("image/png");
+    img.style.width = "100%";
+    img.style.maxWidth = "600px";
+    const chartTitle = document.createElement("h3");
+    chartTitle.textContent = "Grafik";
+    el.appendChild(chartTitle);
+    el.appendChild(img);
+    chart.destroy();
   }
+
+  // ── Aksiyon planı ──
+  if ((r.action_plan || []).length) {
+    const h = document.createElement("h3");
+    h.textContent = "Aksiyon Planı";
+    const ul = document.createElement("ul");
+    ul.innerHTML = r.action_plan
+      .map((a) => `<li>${esc(typeof a === "string" ? a : a.action || "")}</li>`)
+      .join("");
+    el.appendChild(h);
+    el.appendChild(ul);
+  }
+
+  // ── SQL ──
+  if (r.sql_query) {
+    const h = document.createElement("h3");
+    h.textContent = "SQL Sorgusu";
+    const pre = document.createElement("pre");
+    pre.style.cssText = "background:#f4f4f4;padding:10px;white-space:pre-wrap";
+    pre.textContent = r.sql_query;
+    el.appendChild(h);
+    el.appendChild(pre);
+  }
+
+  return el;
 }
 
-function _showExportMenu(btn, report) {
-  // Var olan menüyü temizle
-  document.getElementById("exportMenu")?.remove();
-
-  const menu = document.createElement("div");
-  menu.id = "exportMenu";
-  menu.className = "export-menu";
-  menu.innerHTML = `
-    <button data-fmt="pdf">📄 PDF olarak indir</button>
-    <button data-fmt="excel">📊 Excel olarak indir</button>`;
-  btn.parentElement.style.position = "relative";
-  btn.parentElement.appendChild(menu);
-
-  menu.querySelectorAll("button").forEach((b) => {
-    b.addEventListener("click", () => {
-      _exportReport(report, b.dataset.fmt);
-      menu.remove();
-    });
-  });
-
-  // Dışarı tıklayınca kapat
-  setTimeout(() => {
-    document.addEventListener("click", function closer(e) {
-      if (!menu.contains(e.target) && e.target !== btn) {
-        menu.remove();
-        document.removeEventListener("click", closer);
-      }
-    });
-  }, 0);
+/* ─── PDF indir ───────────────────────────────────────────── */
+function downloadPDF(i) {
+  const r = window._filtered[i];
+  html2pdf()
+    .set({ filename: `${(r.title || "rapor").replace(/\s+/g, "_")}.pdf`, margin: 10 })
+    .from(buildReportElement(r))
+    .save();
+  toast("PDF indiriliyor", "success");
 }
 
-/* ─── Copy SQL ────────────────────────────────────────────── */
+/* ─── Excel indir (SheetJS) ───────────────────────────────── */
+function downloadExcel(i) {
+  const r = window._filtered[i];
+  const wb = XLSX.utils.book_new();
 
-function _initCopySql(sql) {
-  const btn = document.getElementById("btnCopySql");
-  if (!btn || !sql) return;
+  // 1. sayfa: özet bilgiler
+  const summarySheet = XLSX.utils.json_to_sheet([
+    { Alan: "Başlık", Değer: r.title || "" },
+    { Alan: "Tarih", Değer: formatDate(r.created_at) },
+    { Alan: "Kaynak", Değer: r.source_type || "" },
+    { Alan: "Özet", Değer: r.summary || "" },
+  ]);
+  XLSX.utils.book_append_sheet(wb, summarySheet, "Özet");
 
-  btn.addEventListener("click", () => {
-    navigator.clipboard.writeText(sql).then(() => {
-      const orig = btn.querySelector("span") ? btn.querySelector("span").textContent : btn.textContent;
-      btn.textContent = "Copied!";
-      setTimeout(() => { btn.textContent = "Copy"; }, 2000);
-      showToast("SQL query copied", "success");
-    });
-  });
+  // 2. sayfa: grafik verisi (varsa)
+  if (r.chart_data && r.chart_data.length) {
+    const dataSheet = XLSX.utils.json_to_sheet(r.chart_data);
+    XLSX.utils.book_append_sheet(wb, dataSheet, "Veri");
+  }
+
+  XLSX.writeFile(wb, `${(r.title || "rapor").replace(/\s+/g, "_")}.xlsx`);
+  toast("Excel indiriliyor", "success");
 }
 
-/* ─── Yardımcı: human-readable label ─────────────────────── */
-
-function _humanLabel(key) {
-  return key
-    .replace(/_/g, " ")
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\b\w/g, c => c.toUpperCase());
+/* ─── Mail kutusunu aç/kapat ──────────────────────────────── */
+function toggleMail(i) {
+  document.getElementById(`mailbox-${i}`).classList.toggle("open");
 }
 
-/* ─── Ana giriş noktası ───────────────────────────────────── */
 
-async function init() {
-  showLoading();
-
-  // URL parametrelerini oku
-  const params = new URLSearchParams(window.location.search);
-  const publicId = params.get("public_id");
-  const reportId = params.get("report_id");
-
-  const id = publicId || reportId;
-  const isPublic = Boolean(publicId);
-
-  if (!id) {
-    showError("No report ID provided. Please generate a report first.");
+/* ─── Mail gönder (PDF ekli, backend → Resend) ────────────── */
+async function sendMail(i) {
+  const r = window._filtered[i];
+  const email = document.getElementById(`mailinput-${i}`).value.trim();
+  if (!email || !email.includes("@")) {
+    toast("Geçerli bir mail adresi girin", "error");
     return;
   }
 
+  toast("PDF hazırlanıyor…", "success");
   try {
-    const report = await fetchReport(id, isPublic);
+    // PDF'i base64 üret
+    const dataUri = await html2pdf()
+      .set({ margin: 10 })
+      .from(buildReportElement(r))
+      .outputPdf("datauristring");
+    const pdfBase64 = dataUri.split(",")[1]; // önekten sonrası
 
-    // Raporun başlık meta bilgilerini doldur (sadece public endpoint
-    // ChatResponse döndürdüğünden title ve created_at olmayabilir)
-    report.title = report.title
-      || (document.URL.includes("public_id") ? "Shared Report" : "Analysis Report");
-    report.created_at = report.created_at || new Date().toISOString();
+    const html = `
+      <h2>${esc(r.title || "Analiz Raporu")}</h2>
+      <p>${esc(r.summary || "")}</p>
+      <p>Ayrıntılı rapor ekteki PDF dosyasındadır.</p>`;
 
-    renderReportHeader(report);
-    renderSummary(report.summary || "No summary available.");
-    renderMetrics(report);
-    renderChart(report);
-    renderActionPlan(report.action_plan);
-    renderSqlSection(report.sql_query);
+    const res = await fetch(`${API_BASE}/reports/email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        to: email,
+        subject: r.title || "Analiz Raporu",
+        html: html,
+        pdf_base64: pdfBase64,
+        filename: `${(r.title || "rapor").replace(/\s+/g, "_")}.pdf`,
+      }),
+    });
 
-    _initCollapsible();
-    _initExportButton(report);
-    _initCopySql(report.sql_query);
-
-    showReport();
-
-    // Sayfa başlığını güncelle
-    document.title = `${report.title} — Nexus Analytics`;
-  } catch (err) {
-    if (err.message?.includes("not public") || err.message?.includes("403")) {
-      showError("This report is private and cannot be accessed without authorization.");
-    } else if (err.message?.includes("404") || err.message?.includes("not found")) {
-      showError("Report not found. It may have been deleted or the link is invalid.");
-    } else {
-      showError(`Failed to load report: ${err.message}`);
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.detail || `HTTP ${res.status}`);
     }
+    toast("Mail gönderildi ✔", "success");
+    document.getElementById(`mailbox-${i}`).classList.remove("open");
+  } catch (err) {
+    toast(`Mail gönderilemedi: ${err.message}`, "error");
   }
+}
+
+/* ─── Yardımcılar ─────────────────────────────────────────── */
+function esc(s) {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function formatDate(iso) {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleString("tr-TR", {
+      day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function toast(msg, type = "success") {
+  const cont = document.getElementById("toasts");
+  const el = document.createElement("div");
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  cont.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+/* ─── Başlat ──────────────────────────────────────────────── */
+function init() {
+  loadReports();
+  renderReports();
+  document.getElementById("searchInput").addEventListener("input", renderReports);
+  document.getElementById("sourceFilter").addEventListener("change", renderReports);
+  // Modalın dışına tıklayınca kapat
+  document.getElementById("modalBg").addEventListener("click", (e) => {
+    if (e.target.id === "modalBg") closeModal();
+  });
 }
 
 document.addEventListener("DOMContentLoaded", init);
