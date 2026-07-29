@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Dashboard — Nexus Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+</head>
+<body>
+
+<!-- Background orbs -->
+<div class="bg-orb orb-1" aria-hidden="true"></div>
+<div class="bg-orb orb-2" aria-hidden="true"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════ -->
+<header class="dashboard-header">
+  <div class="header-content">
+    <div class="logo-section">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="8" fill="url(#lg)"/>
+          <path d="M7 19l5-6 4 4 5-8" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="lg" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#6366f1"/>
+              <stop offset="1" stop-color="#8b5cf6"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-name">Nexus</span>
+        <span class="logo-sub">Analytics</span>
+      </div>
+    </div>
+    <nav class="header-nav">
+      <a href="../chat/index.html" class="nav-link">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M3 10h14M10 3l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back to Analytics
+      </a>
+    </nav>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════
+     MAIN CONTENT
+═══════════════════════════════════════════════════════ -->
+<main class="dashboard-main">
+  
+  <!-- Loading State -->
+  <div class="loading-state" id="loadingState">
+    <div class="loader-spinner"></div>
+    <p>Loading report...</p>
+  </div>
+
+  <!-- Error State -->
+  <div class="error-state hidden" id="errorState">
+    <div class="error-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h2>Report Not Found</h2>
+    <p id="errorMessage">The requested report could not be loaded.</p>
+    <a href="../chat/index.html" class="btn-back">Return to Analytics</a>
+  </div>
+
+  <!-- Report Content -->
+  <div class="report-container hidden" id="reportContainer">
+    
+    <!-- Report Header -->
+    <div class="report-header">
+      <div class="report-header-content">
+        <div class="report-badge">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M2 3h6l2 2h6v9H2V3z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>Report</span>
+        </div>
+        <h1 class="report-title" id="reportTitle">Data Analysis Report</h1>
+        <div class="report-meta">
+          <span class="meta-item">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="8" cy="8" r="6"/>
+              <path d="M8 4v4l3 2" stroke-linecap="round"/>
+            </svg>
+            <span id="reportDate">—</span>
+          </span>
+          <span class="meta-item">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="2" y="4" width="12" height="10" rx="2"/>
+              <path d="M2 7h12M5 4v-2M11 4v-2" stroke-linecap="round"/>
+            </svg>
+            <span id="reportSource">—</span>
+          </span>
+        </div>
+      </div>
+      <div class="report-actions">
+        <button class="btn-export" id="btnExport">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M8 12V2M5 5l3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 10v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3" stroke-linecap="round"/>
+          </svg>
+          <span>Export</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Section -->
+    <section class="dashboard-section">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 10h4l3-6 3 12 3-6h4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Executive Summary
+        </h2>
+      </div>
+      <div class="summary-card">
+        <div class="summary-content markdown-content" id="summaryContent">
+          <p>Loading summary...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Key Metrics Section -->
+    <section class="dashboard-section" id="metricsSection" style="display:none">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="4" width="4" height="12" rx="1"/>
+            <rect x="8" y="8" width="4" height="8" rx="1"/>
+            <rect x="13" y="2" width="4" height="14" rx="1"/>
+          </svg>
+          Key Metrics
+        </h2>
+      </div>
+      <div class="metrics-grid" id="metricsGrid">
+        <!-- Metrics cards populated by JS -->
+      </div>
+    </section>
+
+    <!-- Visualization Section -->
+    <section class="dashboard-section" id="chartSection" style="display:none">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 17V7l5-5 4 4 5-5v16" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Data Visualization
+        </h2>
+      </div>
+      <div class="chart-card">
+        <div class="chart-wrapper" id="chartWrapper">
+          <canvas id="reportChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Action Plan Section -->
+    <section class="dashboard-section" id="actionSection" style="display:none">
+      <div class="section-header">
+        <h2 class="section-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M9 5L5 9l4 4" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 5l-6 8" stroke-linecap="round"/>
+            <circle cx="15" cy="13" r="2"/>
+          </svg>
+          Actionable Insights
+        </h2>
+      </div>
+      <div class="action-list" id="actionList">
+        <!-- Action items populated by JS -->
+      </div>
+    </section>
+
+    <!-- SQL Query Section (collapsible) -->
+    <section class="dashboard-section" id="sqlSection" style="display:none">
+      <div class="section-header collapsible" id="sqlHeader">
+        <h2 class="section-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="4" width="14" height="12" rx="2"/>
+            <path d="M3 8h14M7 4v12" stroke-linecap="round"/>
+          </svg>
+          Technical Details
+        </h2>
+        <svg class="collapse-icon" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 4l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="sql-collapse-content" id="sqlContent">
+        <div class="sql-card">
+          <div class="sql-header">
+            <span>SQL Query</span>
+            <button class="btn-copy-sql" id="btnCopySql">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="4" y="4" width="8" height="10" rx="1"/>
+                <path d="M12 4V2H4v2" stroke-linecap="round"/>
+              </svg>
+              Copy
+            </button>
+          </div>
+          <pre class="sql-code" id="sqlQuery">-- No query available</pre>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+</main>
+
+<!-- Toast Container -->
+<div class="toast-stack" id="toastContainer" aria-live="assertive"></div>
+
+<script src="../chat/js/chart.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>

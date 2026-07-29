@@ -1,12 +1,14 @@
 """
+src/connectors/schema_extractor.py
+
 Şema Keşif Motoru (Görev S1-O1)
 --------------------------------
 Bir veritabanına bağlanır; tabloları, sütunları, veri tiplerini, birincil
 anahtarları (PK) ve yabancı anahtar (FK) ilişkilerini çıkarır. Ardından bu
 bilgiyi LLM'in kolayca okuyabileceği temiz bir yapıya dönüştürür.
 
-Bu modülün çıktısı, daha önce yazdığın prompts.py içindeki
-SQL_EXECUTOR_SYSTEM_PROMPT'un {schema} alanını dolduracak.
+Bu modülün çıktısı, prompts.py içindeki SQL_EXECUTOR_SYSTEM_PROMPT'un
+{schema} alanını dolduracak.
 """
 from __future__ import annotations
 
@@ -16,36 +18,31 @@ from typing import Any
 from sqlalchemy import create_engine, inspect
 
 
-def extract_schema(db_url: str) -> dict[str, Any]:
+def extract_schema(db_url: str, schema_name: str | None = None) -> dict[str, Any]:
     """
     Verilen veritabanındaki tüm tabloların meta-verisini çıkarır.
 
     Args:
-        db_url: SQLAlchemy bağlantı adresi. Örnekler:
-                "postgresql+psycopg2://user:pass@localhost:5432/mydb"
-                "mysql+pymysql://user:pass@localhost:3306/mydb"
-                "sqlite:///./demo.db"
-
-    Returns:
-        Tabloları, sütunları ve ilişkileri içeren yapılandırılmış bir dict.
+        db_url: SQLAlchemy bağlantı adresi.
+        schema_name: İsteğe bağlı (Snowflake için zorunlu, diğerleri için opsiyonel).
     """
     engine = create_engine(db_url)
     inspector = inspect(engine)
 
     tables: list[dict[str, Any]] = []
 
-    for table_name in inspector.get_table_names():
+    for table_name in inspector.get_table_names(schema=schema_name):
         # Birincil anahtar sütunlarını bir kümede topla (hızlı kontrol için)
-        pk_info = inspector.get_pk_constraint(table_name)
+        pk_info = inspector.get_pk_constraint(table_name, schema=schema_name)
         pk_columns = set(pk_info.get("constrained_columns", []))
 
         # --- Sütun bilgileri ---
         columns: list[dict[str, Any]] = []
-        for col in inspector.get_columns(table_name):
+        for col in inspector.get_columns(table_name, schema=schema_name):
             columns.append(
                 {
                     "name": col["name"],
-                    "type": str(col["type"]),       # örn: "VARCHAR(255)", "INTEGER"
+                    "type": str(col["type"]),
                     "nullable": col.get("nullable", True),
                     "primary_key": col["name"] in pk_columns,
                 }
@@ -53,7 +50,7 @@ def extract_schema(db_url: str) -> dict[str, Any]:
 
         # --- Yabancı anahtar (FK) ilişkileri ---
         foreign_keys: list[dict[str, Any]] = []
-        for fk in inspector.get_foreign_keys(table_name):
+        for fk in inspector.get_foreign_keys(table_name, schema=schema_name):
             foreign_keys.append(
                 {
                     "columns": fk.get("constrained_columns", []),
@@ -103,15 +100,12 @@ def schema_to_prompt_string(schema: dict[str, Any]) -> str:
     return "\n".join(lines).strip()
 
 
-# --- Hızlı test ---
-# Gerçek bir veritabanı kurmadan denemek için geçici bir SQLite DB oluşturuyoruz.
-# Çalıştır:  python -m src.connectors.schema_extractor
+# --- Hızlı test ---  python -m src.connectors.schema_extractor
 if __name__ == "__main__":
     from sqlalchemy import text
 
     demo_url = "sqlite:///./demo.db"
 
-    # İlişkili iki örnek tablo oluştur (customers <- orders)
     demo_engine = create_engine(demo_url)
     with demo_engine.begin() as conn:
         conn.execute(
@@ -139,11 +133,8 @@ if __name__ == "__main__":
         )
     demo_engine.dispose()
 
-    # Şemayı çıkar ve iki formatta da yazdır
     result = extract_schema(demo_url)
-
     print("=== JSON meta-data ===")
     print(json.dumps(result, indent=2, ensure_ascii=False))
-
     print("\n=== LLM prompt formatı ===")
     print(schema_to_prompt_string(result))
