@@ -1,7 +1,25 @@
 """Chat (doğal dil sorgu) endpoint'leri için request/response modelleri."""
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
+
+
+class SourceTableSelection(BaseModel):
+    """Tek bir kaynak için tablo/koleksiyon seçimi."""
+
+    source_id: str = Field(
+        ...,
+        description="Seçimin uygulanacağı kaynak kimliği",
+        examples=["src_abc123"],
+    )
+    tables: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Sorgulanacak tablo/koleksiyon adları. "
+            "Boş liste → kaynağın tüm şemasını kullan."
+        ),
+        examples=[["orders", "customers"]],
+    )
 
 
 class ChatRequest(BaseModel):
@@ -18,6 +36,23 @@ class ChatRequest(BaseModel):
         min_length=3,
         examples=["Önümüzdeki ay en çok satış yapılacak kategori hangisi?"],
     )
+    language: str | None = Field(
+        default=None,
+        description=(
+            "Yanıt dili: 'tr' veya 'en'. "
+            "Belirtilmezse soru metninden otomatik tespit edilir."
+        ),
+        examples=["tr", "en"],
+    )
+    # Çoklu kaynak desteği — boşsa sadece birincil kaynak kullanılır
+    source_selection: list[SourceTableSelection] = Field(
+        default_factory=list,
+        description=(
+            "Hangi kaynakların ve hangi tabloların sorgulanacağını belirtir. "
+            "Boş liste → session'daki tüm kaynakları sorgula (tablo kısıtı olmadan). "
+            "Belirli kaynaklar için SourceTableSelection listesi gönder."
+        ),
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -25,16 +60,40 @@ class ChatRequest(BaseModel):
                 {
                     "session_id": "sess_abc123",
                     "question": "Son 3 ayda en yüksek ciroyu hangi kategori üretti?",
-                }
+                },
+                {
+                    "session_id": "sess_abc123",
+                    "question": "Satış ve finans verilerini karşılaştır",
+                    "source_selection": [
+                        {"source_id": "src_001", "tables": ["orders", "customers"]},
+                        {"source_id": "src_002", "tables": ["invoices"]},
+                    ],
+                },
             ]
         }
     }
 
 
+
+class SourceQueryInfo(BaseModel):
+    """Standard response metadata for a queried data source."""
+
+    source_id: str = Field(..., description="Queried source id")
+    alias: str | None = Field(default=None, description="Human-readable source alias")
+    source_type: str = Field(..., description="Source type")
+    success: bool = Field(..., description="Whether the source query succeeded")
+    row_count: int = Field(default=0, ge=0, description="Number of rows returned by the source")
+    error: str | None = Field(default=None, description="Source query error message, if any")
+
+
 class ChatResponse(BaseModel):
     """Ajan'ın chat sorusuna verdiği yapılandırılmış yanıt."""
 
-    status: str = Field(..., description="İşlem durumu", examples=["success"])
+    status: Literal["success", "partial", "error"] = Field(
+        ...,
+        description="Response status",
+        examples=["success", "partial", "error"],
+    )
     summary: str = Field(
         ...,
         description="Türkçe özet cevap",
@@ -52,6 +111,23 @@ class ChatResponse(BaseModel):
         default_factory=list,
         description="Önerilen aksiyon maddeleri",
     )
+    # Çoklu kaynak sorgu meta bilgisi
+    sources_queried: list[SourceQueryInfo] = Field(
+        default_factory=list,
+        description=(
+            "Her kaynağın sorgu özeti: "
+            "[{source_id, alias, source_type, success, row_count, error}, ...]"
+        ),
+    )
+    # Rapor paylaşım bilgileri (opsiyonel)
+    report_id: str | None = Field(
+        default=None,
+        description="Rapor benzersiz kimliği (rapor oluşturma durumunda)",
+    )
+    public_link: str | None = Field(
+        default=None,
+        description="Herkese açık rapor linki (make_public=true durumunda)",
+    )
 
     model_config = {
         "json_schema_extra": {
@@ -66,6 +142,16 @@ class ChatResponse(BaseModel):
                     "action_plan": [
                         "Tekstil kategorisinde acil indirim kampanyası planlayın.",
                         "Tedarik siparişlerini %10 kısın.",
+                    ],
+                    "sources_queried": [
+                        {
+                            "source_id": "src_001",
+                            "alias": "Satış DB",
+                            "source_type": "postgresql",
+                            "success": True,
+                            "row_count": 240,
+                            "error": None,
+                        }
                     ],
                 }
             ]

@@ -1,10 +1,8 @@
 """
+
 Tüm veritabanı konnektörleri için ortak temel sınıf.
 postgres.py ve mysql.py'nin PAYLAŞTIĞI mantık burada toplanır; alt sınıflar
 yalnızca kendi bağlantı adreslerini (db_url) sağlar.
-
-Böylece bağlan / kapat / test et / şema çıkar / SELECT çalıştır mantığı
-tek yerde yazılır, her veritabanında tekrar edilmez.
 """
 from __future__ import annotations
 
