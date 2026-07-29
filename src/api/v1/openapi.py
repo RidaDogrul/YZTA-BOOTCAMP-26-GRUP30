@@ -56,4 +56,12 @@ OPENAPI_TAGS: list[dict[str, Any]] = [
             "Dashboard ana sayfası ve rapor detay ekranı bu grubu kullanır."
         ),
     },
+
+    {
+         "name": "Beta",
+         "description": (
+              "Kapalı beta davet kodları ve Design Partner erişim yönetimi. "
+              "Admin işlemleri JWT role=admin claim'i gerektirir."
+        ),
+    },
 ]

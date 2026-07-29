@@ -224,12 +224,13 @@ function renderChart(reportData) {
   if (!wrapper) return;
 
   // chart.js'in renderChart fonksiyonunu kullan (chat modülünden paylaşılan)
-  if (typeof window.renderChart === "function") {
+  const chartApi = window.DataCleanroomCharts && window.DataCleanroomCharts.renderChart;
+  if (typeof chartApi === "function") {
     const canvas = document.getElementById("reportChart");
     if (canvas) {
       const container = canvas.parentElement;
-      container.innerHTML = "";
-      window.renderChart(container, reportData.chart_data, "dashboard-main");
+      container.innerHTML = '<canvas id="reportChart"></canvas>';
+      chartApi(container, reportData.chart_data, "dashboard-main");
     }
   } else {
     // Fallback: Chart.js doğrudan kullan
@@ -341,55 +342,85 @@ function _initCollapsible() {
   });
 }
 
-/* ─── Share button ────────────────────────────────────────── */
 
-function _initShareButton(reportId) {
-  const btn = document.getElementById("btnShare");
-  if (!btn) return;
-
-  btn.addEventListener("click", () => {
-    const shareUrl = window.location.href;
-    navigator.clipboard.writeText(shareUrl).then(() => {
-      showToast("Report link copied to clipboard!", "success");
-      const origText = btn.querySelector("span").textContent;
-      btn.querySelector("span").textContent = "Copied!";
-      setTimeout(() => { btn.querySelector("span").textContent = origText; }, 2000);
-    }).catch(() => {
-      showToast("Could not copy. Use the address bar to share.", "info");
-    });
-  });
-}
 
 /* ─── Export button ───────────────────────────────────────── */
 
+/* ─── Export button → PDF/Excel (backend /reports/export) ─── */
 function _initExportButton(report) {
   const btn = document.getElementById("btnExport");
   if (!btn) return;
 
   btn.addEventListener("click", () => {
-    try {
-      const content = {
-        title: report.title || "Report",
-        date: _formatDate(report.created_at),
-        summary: report.summary,
-        action_plan: report.action_plan || [],
-        sql_query: report.sql_query,
-        sources: report.sources_queried,
-      };
-      const blob = new Blob(
-        [JSON.stringify(content, null, 2)],
-        { type: "application/json" }
-      );
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = `nexus-report-${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      showToast("Report exported as JSON", "success");
-    } catch {
-      showToast("Export failed. Please try again.", "error");
-    }
+    // Basit bir seçim menüsü göster (PDF / Excel)
+    _showExportMenu(btn, report);
   });
+}
+
+async function _exportReport(report, format) {
+  try {
+    showToast(`${format.toUpperCase()} hazırlanıyor...`, "info");
+
+    const token = localStorage.getItem("nexus_auth_token");
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const res = await fetch(`${API_BASE}/reports/export`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        format,
+        title: report.title || "Analiz Raporu",
+        summary: report.summary || "",
+        sql_query: report.sql_query || "",
+        chart_data: report.chart_data || [],
+        action_plan: report.action_plan || [],
+        language: report.language || "tr",
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${(report.title || "rapor").replace(/\s+/g, "_")}.${format === "excel" ? "xlsx" : "pdf"}`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showToast(`${format.toUpperCase()} indirildi`, "success");
+  } catch (err) {
+    showToast(`İndirme başarısız: ${err.message}`, "error");
+  }
+}
+
+function _showExportMenu(btn, report) {
+  // Var olan menüyü temizle
+  document.getElementById("exportMenu")?.remove();
+
+  const menu = document.createElement("div");
+  menu.id = "exportMenu";
+  menu.className = "export-menu";
+  menu.innerHTML = `
+    <button data-fmt="pdf">📄 PDF olarak indir</button>
+    <button data-fmt="excel">📊 Excel olarak indir</button>`;
+  btn.parentElement.style.position = "relative";
+  btn.parentElement.appendChild(menu);
+
+  menu.querySelectorAll("button").forEach((b) => {
+    b.addEventListener("click", () => {
+      _exportReport(report, b.dataset.fmt);
+      menu.remove();
+    });
+  });
+
+  // Dışarı tıklayınca kapat
+  setTimeout(() => {
+    document.addEventListener("click", function closer(e) {
+      if (!menu.contains(e.target) && e.target !== btn) {
+        menu.remove();
+        document.removeEventListener("click", closer);
+      }
+    });
+  }, 0);
 }
 
 /* ─── Copy SQL ────────────────────────────────────────────── */
@@ -452,7 +483,6 @@ async function init() {
     renderSqlSection(report.sql_query);
 
     _initCollapsible();
-    _initShareButton(id);
     _initExportButton(report);
     _initCopySql(report.sql_query);
 

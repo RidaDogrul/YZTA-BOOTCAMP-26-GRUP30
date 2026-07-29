@@ -1,12 +1,28 @@
-/**
- * chart.js — Chart.js 4 entegrasyonu
- * CSS custom property'lerle uyumlu renk paleti ve config.
+﻿/**
+ * chart.js — Chart.js 4 integration for Chat API chart_data.
+ *
+ * Sprint 3 - S3-H4 scope:
+ * - Render API `chart_data` dynamically with Chart.js.
+ * - Detect line/bar/doughnut chart types from the payload shape.
+ * - Normalize unsafe or oversized chart payloads before rendering.
+ * - Fail gracefully when chart data is empty or unsupported.
  */
 
 const PALETTE = [
-  "#6366f1","#22c55e","#f59e0b","#ef4444",
-  "#06b6d4","#a855f7","#f97316","#14b8a6",
-  "#e879f9","#84cc16",
+  "#6366f1", "#22c55e", "#f59e0b", "#ef4444",
+  "#06b6d4", "#a855f7", "#f97316", "#14b8a6",
+  "#e879f9", "#84cc16",
+];
+
+const MAX_CHART_POINTS = 120;
+
+const TIME_KEYS = [
+  "date", "datetime", "timestamp", "month", "period", "year", "week",
+  "gun", "ay", "tarih", "hafta", "ds",
+];
+
+const SHARE_KEYS = [
+  "share", "percent", "percentage", "oran", "yuzde", "pay", "ratio",
 ];
 
 const BASE_OPTS = {
@@ -18,7 +34,8 @@ const BASE_OPTS = {
       labels: {
         color: "#94a3b8",
         font: { family: "'Inter', system-ui, sans-serif", size: 11 },
-        boxWidth: 10, padding: 14,
+        boxWidth: 10,
+        padding: 14,
       },
     },
     tooltip: {
@@ -34,12 +51,12 @@ const BASE_OPTS = {
   scales: {
     x: {
       ticks: { color: "#475569", font: { size: 11 } },
-      grid:  { color: "rgba(255,255,255,.04)" },
+      grid: { color: "rgba(255,255,255,.04)" },
       border: { color: "rgba(255,255,255,.07)" },
     },
     y: {
       ticks: { color: "#475569", font: { size: 11 } },
-      grid:  { color: "rgba(255,255,255,.04)" },
+      grid: { color: "rgba(255,255,255,.04)" },
       border: { color: "rgba(255,255,255,.07)" },
     },
   },
@@ -48,49 +65,89 @@ const BASE_OPTS = {
 /* Active instances — destroy before re-render */
 const _instances = new Map();
 
-/* ── Type detection ───────────────────────────────────────── */
-function _detectType(data) {
-  if (!Array.isArray(data) || !data.length) return null;
-  const keys    = Object.keys(data[0]);
-  const numKeys = keys.filter(k => {
-    const v = data[0][k];
-    return typeof v === "number" || (v !== null && v !== "" && !isNaN(Number(v)));
-  });
-  const labelKey = keys.find(k => !numKeys.includes(k)) || keys[0];
-  if (!numKeys.length) return null;
+/* ── Data normalization ───────────────────────────────────────────── */
 
-  const lk = labelKey.toLowerCase();
-  const isTime = ["date","month","period","year","week","gun","ay","tarih","hafta"]
-    .some(w => lk.includes(w));
+function normalizeChartData(data) {
+  if (!Array.isArray(data)) return [];
 
-  const isShare = numKeys.some(k => {
-    const kl = k.toLowerCase();
-    return ["share","percent","oran","yuzde","pay","ratio"].some(w => kl.includes(w));
-  });
-
-  return { labelKey, numKeys, isTime, isShare };
+  return data
+    .filter(row => row && typeof row === "object" && !Array.isArray(row))
+    .slice(0, MAX_CHART_POINTS)
+    .map(row => ({ ...row }));
 }
 
-/* ── Build Chart.js config ────────────────────────────────── */
+function _isNumericValue(value) {
+  return typeof value === "number" || (
+    value !== null &&
+    value !== "" &&
+    Number.isFinite(Number(value))
+  );
+}
+
+function _collectKeys(rows) {
+  return [...new Set(rows.flatMap(row => Object.keys(row)))];
+}
+
+function _toNumber(value) {
+  return _isNumericValue(value) ? Number(value) : 0;
+}
+
+function _colorAt(index) {
+  return PALETTE[index % PALETTE.length];
+}
+
+function _detectType(data) {
+  const rows = normalizeChartData(data);
+  if (!rows.length) return null;
+
+  const keys = _collectKeys(rows);
+  if (!keys.length) return null;
+
+  const numKeys = keys.filter(key =>
+    rows.some(row => _isNumericValue(row[key]))
+  );
+
+  if (!numKeys.length) return null;
+
+  const labelKey =
+    keys.find(key => TIME_KEYS.some(word => key.toLowerCase().includes(word))) ||
+    keys.find(key => !numKeys.includes(key)) ||
+    keys[0];
+
+  const lk = labelKey.toLowerCase();
+  const isTime = TIME_KEYS.some(word => lk.includes(word));
+
+  const isShare = numKeys.some(key => {
+    const kl = key.toLowerCase();
+    return SHARE_KEYS.some(word => kl.includes(word));
+  });
+
+  return { rows, labelKey, numKeys, isTime, isShare };
+}
+
+/* ── Build Chart.js config ────────────────────────────────────────── */
+
 function buildChartConfig(data) {
   const info = _detectType(data);
   if (!info) return null;
-  const { labelKey, numKeys, isTime, isShare } = info;
-  const labels = data.map(r => String(r[labelKey]));
+
+  const { rows, labelKey, numKeys, isTime, isShare } = info;
+  const labels = rows.map(row => String(row[labelKey] ?? ""));
 
   /* Line — time series */
   if (isTime) {
-    const datasets = numKeys.map((k, i) => ({
-      label: _human(k),
-      data:  data.map(r => Number(r[k])),
-      borderColor:     PALETTE[i % PALETTE.length],
-      backgroundColor: PALETTE[i % PALETTE.length] + "22",
-      fill:       numKeys.length === 1,
-      tension:    0.38,
-      pointRadius: data.length < 25 ? 4 : 2,
+    const datasets = numKeys.map((key, index) => ({
+      label: _human(key),
+      data: rows.map(row => _toNumber(row[key])),
+      borderColor: _colorAt(index),
+      backgroundColor: _colorAt(index) + "22",
+      fill: numKeys.length === 1,
+      tension: 0.38,
+      pointRadius: rows.length < 25 ? 4 : 2,
       pointHoverRadius: 6,
       borderWidth: 2,
     }));
+
     return {
       type: "line",
       data: { labels, datasets },
@@ -111,11 +168,11 @@ function buildChartConfig(data) {
       data: {
         labels,
         datasets: [{
-          data:            data.map(r => Number(r[numKeys[0]])),
-          backgroundColor: PALETTE.slice(0, data.length),
-          borderColor:     "#07080f",
-          borderWidth:     3,
-          hoverOffset:     10,
+          data: rows.map(row => _toNumber(row[numKeys[0]])),
+          backgroundColor: rows.map((_, index) => _colorAt(index)),
+          borderColor: "#07080f",
+          borderWidth: 3,
+          hoverOffset: 10,
         }],
       },
       options: {
@@ -124,22 +181,27 @@ function buildChartConfig(data) {
         scales: undefined,
         plugins: {
           ...BASE_OPTS.plugins,
-          legend: { ...BASE_OPTS.plugins.legend, position: "right", display: true },
+          legend: {
+            ...BASE_OPTS.plugins.legend,
+            position: "right",
+            display: true,
+          },
         },
       },
     };
   }
 
-  /* Bar — default */
-  const datasets = numKeys.map((k, i) => ({
-    label:           _human(k),
-    data:            data.map(r => Number(r[k])),
-    backgroundColor: PALETTE[i % PALETTE.length] + "cc",
-    borderColor:     PALETTE[i % PALETTE.length],
-    borderWidth:     1,
-    borderRadius:    5,
-    borderSkipped:   false,
+  /* Bar — default categorical comparison */
+  const datasets = numKeys.map((key, index) => ({
+    label: _human(key),
+    data: rows.map(row => _toNumber(row[key])),
+    backgroundColor: _colorAt(index) + "cc",
+    borderColor: _colorAt(index),
+    borderWidth: 1,
+    borderRadius: 5,
+    borderSkipped: false,
   }));
+
   return {
     type: "bar",
     data: { labels, datasets },
@@ -153,12 +215,15 @@ function buildChartConfig(data) {
   };
 }
 
-/* ── Public render function ───────────────────────────────── */
+/* ── Public render function ───────────────────────────────────────── */
+
 function renderChart(container, chartData, chartId) {
+  if (!container) return;
+
   const config = buildChartConfig(chartData);
   if (!config) {
     container.innerHTML =
-      '<p style="color:#475569;font-size:12px;padding:8px 0">Grafik oluşturulamadı.</p>';
+      '<p style="color:#475569;font-size:12px;padding:8px 0">Grafik oluşturulamadı. chart_data formatı desteklenmiyor.</p>';
     return;
   }
 
@@ -166,6 +231,8 @@ function renderChart(container, chartData, chartId) {
     _instances.get(chartId).destroy();
     _instances.delete(chartId);
   }
+
+  container.innerHTML = "";
 
   const canvas = document.createElement("canvas");
   canvas.id = `c-${chartId}`;
@@ -175,10 +242,20 @@ function renderChart(container, chartData, chartId) {
   _instances.set(chartId, new Chart(canvas, config));
 }
 
-/* ── Helpers ──────────────────────────────────────────────── */
+/* ── Helpers ──────────────────────────────────────────────────────── */
+
 function _human(key) {
-  return key
+  return String(key)
     .replace(/_/g, " ")
     .replace(/([a-z])([A-Z])/g, "$1 $2")
-    .replace(/\b\w/g, c => c.toUpperCase());
+    .replace(/\b\w/g, char => char.toUpperCase());
+}
+
+/* Expose helpers for manual debugging and lightweight frontend checks. */
+if (typeof window !== "undefined") {
+  window.DataCleanroomCharts = {
+    normalizeChartData,
+    buildChartConfig,
+    renderChart,
+  };
 }
