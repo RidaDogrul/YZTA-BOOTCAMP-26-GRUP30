@@ -29,10 +29,63 @@ from src.services.report_exporter import export_report as build_export
 from src.utils.logger import get_logger
 from src.utils.session_store import session_store
 
+import base64
+import os
+from typing import Optional
+
+import resend
+from pydantic import BaseModel
+
 logger = get_logger(__name__)
 
 router = APIRouter()
 
+class EmailReportRequest(BaseModel):
+    to: str
+    subject: str
+    html: Optional[str] = None
+    pdf_base64: Optional[str] = None
+    filename: str = "rapor.pdf"
+
+
+@router.post(
+    "/email",
+    summary="Raporu e-posta ile gönder",
+    description="Raporu (PDF ek dosyasıyla) belirtilen adrese Resend üzerinden gönderir.",
+)
+def email_report(payload: EmailReportRequest) -> dict:
+    """Raporu tek bir alıcıya PDF ekiyle mail atar."""
+    resend.api_key = os.getenv("RESEND_API_KEY")
+    if not resend.api_key:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="RESEND_API_KEY tanımlı değil (.env kontrol edin).",
+        )
+
+    params = {
+        "from": os.getenv("MAIL_FROM", "onboarding@resend.dev"),
+        "to": [payload.to],
+        "subject": payload.subject or "Analiz Raporu",
+        "html": payload.html or "<p>Analiz raporunuz ektedir.</p>",
+    }
+
+    # PDF varsa ek dosya olarak koy
+    if payload.pdf_base64:
+        b64 = payload.pdf_base64.split(",")[-1]  # "data:...base64," önekini at
+        raw = base64.b64decode(b64)
+        params["attachments"] = [
+            {"filename": payload.filename or "rapor.pdf", "content": list(raw)}
+        ]
+
+    try:
+        result = resend.Emails.send(params)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Mail gönderilemedi: {exc}",
+        )
+
+    return {"status": "sent", "id": result.get("id") if isinstance(result, dict) else None}
 
 # ---------------------------------------------------------------------------
 # GET /reports — Dashboard rapor listesi (şablon)
