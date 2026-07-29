@@ -11,6 +11,7 @@ from statsmodels.tsa.arima.model import ARIMA
 
 from src.utils.logger import get_logger
 from src.utils.metrics import measure_model_inference
+from src.utils.notifier import notify_forecast_completed
 
 ModelName = Literal["prophet", "arima", "lightgbm"]
 AggregationMethod = Literal["sum", "mean"]
@@ -523,13 +524,17 @@ def model_selector(
         },
     )
 
-    return ForecastResult(
-        selected_model=selected_model,
-        model_scores=model_scores,
-        forecast=final_forecast,
-        failed_models=failed_models,
+    result = ForecastResult(
+         selected_model=selected_model,
+         model_scores=model_scores,
+         forecast=final_forecast,
+         failed_models=failed_models,
     )
 
+    # Bildirim gönderilemese bile tahmin sonucu bozulmaz.
+    notify_forecast_completed(result)
+
+    return result
 
 def evaluate_forecast(
     validation: pd.DataFrame,
