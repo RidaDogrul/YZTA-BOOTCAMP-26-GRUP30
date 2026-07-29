@@ -32,24 +32,44 @@ class PIIAnonymizer:
         )
         self.anonymizer = AnonymizerEngine()
 
-    def anonymize_text(self, text: str) -> str:
-        """Metin içindeki kişisel verileri maskeler."""
+    def anonymize_text(
+        self,
+        text: str,
+        *,
+        mask_person: bool = True,
+    ) -> str:
+        """
+        Metin içindeki kişisel verileri maskeler.
+
+        mask_person=False olduğunda PERSON tanıması kapatılır. E-posta,
+        telefon ve TCKN maskelemesi çalışmaya devam eder. Bu seçenek şehir
+        gibi yapılandırılmış konum değerlerinin kişi sanılmasını önlemek
+        için kullanılır.
+        """
         if not text:
             return text
 
+        entities = ["EMAIL_ADDRESS"]
+        operators = {
+            "EMAIL_ADDRESS": OperatorConfig(
+                "replace",
+                {"new_value": "<EMAIL>"},
+            ),
+        }
+
+        if mask_person:
+            entities.append("PERSON")
+            operators["PERSON"] = OperatorConfig(
+                "replace",
+                {"new_value": "<PERSON>"},
+            )
+
         # Presidio analizini çalıştır
         results = self.analyzer.analyze(
-           text=text,
-           language="en",
-            entities=[
-             "PERSON",
-             "EMAIL_ADDRESS",
-            ],
+            text=text,
+            language="en",
+            entities=entities,
         )
-        operators = {
-            "PERSON": OperatorConfig("replace", {"new_value": "<PERSON>"}),
-            "EMAIL_ADDRESS": OperatorConfig("replace", {"new_value": "<EMAIL>"}),
-        }
         anonymized_result = self.anonymizer.anonymize(
             text=text,
             analyzer_results=results,
@@ -83,6 +103,8 @@ class PIIAnonymizer:
 
         key_hint verilmişse email, telefon, TCKN ve kişi adı gibi alanlar
         yalnızca metin analizine bağlı kalmadan kesin olarak maskelenir.
+        Konum alanlarında ise yanlış PERSON tespitini önlemek için kişi
+        tanıması kapatılır.
         """
         if isinstance(value, dict):
             return {
@@ -114,7 +136,14 @@ class PIIAnonymizer:
                 return pii_type
 
         if isinstance(value, str):
-            return self.anonymize_text(value)
+            is_location = (
+                key_hint is not None
+                and self._is_location_column(key_hint)
+            )
+            return self.anonymize_text(
+                value,
+                mask_person=not is_location,
+            )
 
         return value
 
@@ -128,21 +157,30 @@ class PIIAnonymizer:
         - tckn/tc_no/tc_kimlik -> <TCKN>
         - name/ad_soyad/isim/customer_name -> <PERSON>
 
-        Eğer kolon adı PII gibi görünmüyorsa, hücre metni içinde PII arar.
+        Konum kolonlarında PERSON tanıması kapatılır; diğer PII kontrolleri
+        çalışmaya devam eder. Diğer metin kolonlarında mevcut genel metin
+        analizi uygulanır.
         """
         anonymized_df = df.copy()
+
         for column in anonymized_df.columns:
             pii_type = self._detect_pii_column_type(column)
+
             if pii_type:
                 anonymized_df[column] = anonymized_df[column].apply(
                     lambda value: value if pd.isna(value) else pii_type
                 )
             elif is_string_dtype(anonymized_df[column]):
-                 anonymized_df[column] = anonymized_df[column].apply(
-                  lambda value: self.anonymize_text(value)
-                  if isinstance(value, str)
-                  else value
+                is_location = self._is_location_column(column)
+                anonymized_df[column] = anonymized_df[column].apply(
+                    lambda value: self.anonymize_text(
+                        value,
+                        mask_person=not is_location,
+                    )
+                    if isinstance(value, str)
+                    else value
                 )
+
         return anonymized_df
 
     # Dahili yardımcı fonksiyonlar
@@ -305,6 +343,73 @@ class PIIAnonymizer:
                     return replacement
 
         return None
+
+    def _is_location_column(self, column_name: str) -> bool:
+        """
+        Genel coğrafi kategori içeren kolonları tanır.
+
+        Bu alanlar açık adres değildir. Grafiklerde kullanılan şehir, ilçe,
+        ülke ve bölge gibi toplulaştırılmış konum etiketlerini korumak için
+        yalnızca PERSON tanıması kapatılır.
+        """
+        normalized_column = self._normalize_column_name(column_name)
+
+        location_column_patterns = {
+            "city",
+            "cityname",
+            "customercity",
+            "clientcity",
+            "billingcity",
+            "shippingcity",
+            "deliverycity",
+            "ordercity",
+            "sehir",
+            "sehri",
+            "sehiradi",
+            "musterisehri",
+            "faturasehri",
+            "teslimatsehri",
+            "province",
+            "provincename",
+            "customerprovince",
+            "billingprovince",
+            "shippingprovince",
+            "il",
+            "iladi",
+            "musteriili",
+            "faturaili",
+            "teslimatili",
+            "district",
+            "districtname",
+            "customerdistrict",
+            "billingdistrict",
+            "shippingdistrict",
+            "ilce",
+            "ilceadi",
+            "musteriilcesi",
+            "faturailcesi",
+            "teslimatilcesi",
+            "country",
+            "countryname",
+            "customercountry",
+            "billingcountry",
+            "shippingcountry",
+            "ulke",
+            "ulkeadi",
+            "musteriulkesi",
+            "faturaulkesi",
+            "teslimatulkesi",
+            "state",
+            "statename",
+            "region",
+            "regionname",
+            "salesregion",
+            "bolge",
+            "bolgeadi",
+            "satisbolgesi",
+        }
+
+        return normalized_column in location_column_patterns
 
     def _normalize_column_name(self, column_name: str) -> str:
         """
