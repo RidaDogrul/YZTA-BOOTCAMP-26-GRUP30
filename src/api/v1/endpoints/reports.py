@@ -35,7 +35,7 @@ from typing import Optional
 
 import resend
 from pydantic import BaseModel
-
+from typing import Any, Optional
 logger = get_logger(__name__)
 
 router = APIRouter()
@@ -62,7 +62,7 @@ def email_report(payload: EmailReportRequest) -> dict:
             detail="RESEND_API_KEY tanımlı değil (.env kontrol edin).",
         )
 
-    params = {
+    params: dict[str, Any] = {
         "from": os.getenv("MAIL_FROM", "onboarding@resend.dev"),
         "to": [payload.to],
         "subject": payload.subject or "Analiz Raporu",
