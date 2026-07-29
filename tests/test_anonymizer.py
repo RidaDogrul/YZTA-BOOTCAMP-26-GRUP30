@@ -184,6 +184,7 @@ def test_original_dataframe_is_not_modified(anonymizer):
     assert df.loc[0, "email"] == "original@example.com"
     assert result.loc[0, "email"] == "<EMAIL>"
 
+
 def test_dict_masks_turkish_name_by_key(anonymizer):
     data = {
         "name": "Nimet Asude Yalçın",
@@ -244,6 +245,7 @@ def test_dict_masks_pii_inside_list_of_dicts(anonymizer):
     assert "+905559876543" not in result_text
     assert "10000000146" not in result_text
 
+
 @pytest.mark.parametrize(
     "phone_number",
     [
@@ -261,4 +263,125 @@ def test_additional_phone_formats_are_masked(
     result = anonymizer.anonymize_text(text)
 
     assert phone_number not in result
+    assert "<PHONE>" in result
+
+
+@pytest.mark.parametrize(
+    ("field_name", "location"),
+    [
+        ("city", "İzmir"),
+        ("şehir", "İzmir"),
+        ("customer_city", "Ankara"),
+        ("shipping_city", "İstanbul"),
+        ("province", "Bursa"),
+        ("il", "İzmir"),
+        ("district", "Kadıköy"),
+        ("ilçe", "Çankaya"),
+        ("country", "Türkiye"),
+        ("ülke", "Türkiye"),
+        ("region", "Ege"),
+        ("bölge", "Marmara"),
+    ],
+)
+def test_dict_preserves_structured_location_values(
+    anonymizer,
+    field_name,
+    location,
+):
+    result = anonymizer.anonymize_dict({field_name: location})
+
+    assert result[field_name] == location
+    assert "<PERSON>" not in result[field_name]
+
+
+def test_dict_preserves_city_while_masking_other_pii(anonymizer):
+    data = {
+        "city": "İzmir",
+        "customer_name": "Ayşe Demir",
+        "email": "ayse@example.com",
+        "phone": "05551234567",
+        "tc_no": "10000000146",
+    }
+
+    result = anonymizer.anonymize_dict(data)
+
+    assert result["city"] == "İzmir"
+    assert result["customer_name"] == "<PERSON>"
+    assert result["email"] == "<EMAIL>"
+    assert result["phone"] == "<PHONE>"
+    assert result["tc_no"] == "<TCKN>"
+
+
+def test_dataframe_preserves_city_chart_labels(anonymizer):
+    df = pd.DataFrame(
+        {
+            "city": ["Ankara", "İstanbul", "İzmir", "Bursa"],
+            "total_orders": [120, 180, 95, 140],
+        }
+    )
+
+    result = anonymizer.anonymize_dataframe(df)
+
+    assert result["city"].tolist() == [
+        "Ankara",
+        "İstanbul",
+        "İzmir",
+        "Bursa",
+    ]
+    assert "<PERSON>" not in result["city"].tolist()
+    assert result["total_orders"].tolist() == [120, 180, 95, 140]
+
+
+def test_dataframe_preserves_location_and_masks_pii_columns(anonymizer):
+    df = pd.DataFrame(
+        {
+            "şehir": ["İzmir"],
+            "Müşteri Adı": ["Ayşe Demir"],
+            "E Posta": ["ayse@example.com"],
+            "Telefon Numarası": ["05551234567"],
+            "TC Kimlik Numarası": ["10000000146"],
+            "Adres": ["Örnek Mahallesi No: 10"],
+        }
+    )
+
+    result = anonymizer.anonymize_dataframe(df)
+
+    assert result.loc[0, "şehir"] == "İzmir"
+    assert result.loc[0, "Müşteri Adı"] == "<PERSON>"
+    assert result.loc[0, "E Posta"] == "<EMAIL>"
+    assert result.loc[0, "Telefon Numarası"] == "<PHONE>"
+    assert result.loc[0, "TC Kimlik Numarası"] == "<TCKN>"
+    assert result.loc[0, "Adres"] == "<ADDRESS>"
+
+
+def test_location_field_still_masks_non_person_pii(anonymizer):
+    data = {
+        "city": (
+            "İzmir test.user@example.com "
+            "05551234567 10000000146"
+        )
+    }
+
+    result = anonymizer.anonymize_dict(data)
+    city_value = result["city"]
+
+    assert "İzmir" in city_value
+    assert "test.user@example.com" not in city_value
+    assert "05551234567" not in city_value
+    assert "10000000146" not in city_value
+    assert "<EMAIL>" in city_value
+    assert "<PHONE>" in city_value
+    assert "<TCKN>" in city_value
+
+
+def test_mask_person_false_only_disables_person_detection(anonymizer):
+    text = "İzmir test.user@example.com 05551234567"
+
+    result = anonymizer.anonymize_text(text, mask_person=False)
+
+    assert "İzmir" in result
+    assert "<PERSON>" not in result
+    assert "test.user@example.com" not in result
+    assert "05551234567" not in result
+    assert "<EMAIL>" in result
     assert "<PHONE>" in result
