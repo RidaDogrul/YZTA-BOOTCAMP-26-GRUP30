@@ -23,6 +23,18 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_access_token_expire_minutes: int = 60
 
+    # Tahmin tamamlanınca gönderilecek opsiyonel bildirim ayarları
+    notification_enabled: bool = False
+    notification_email_to: str | None = Field(default=None, repr=False)
+
+    smtp_host: str | None = None
+    smtp_port: int = 587
+    smtp_username: str | None = Field(default=None, repr=False)
+    smtp_password: str | None = Field(default=None, repr=False)
+    smtp_from: str | None = None
+
+    slack_webhook_url: str | None = Field(default=None, repr=False)
+
     # LLM / API Keys
     google_api_key: str | None = Field(default=None, repr=False)
 
@@ -60,6 +72,9 @@ class Settings(BaseSettings):
             "aws_access_key_id",
             "aws_secret_access_key",
             "jwt_secret_key",
+            "smtp_username",
+            "smtp_password",
+            "slack_webhook_url",
         }
 
         for key in secret_keys:
