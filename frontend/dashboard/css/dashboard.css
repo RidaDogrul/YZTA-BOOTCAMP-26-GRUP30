@@ -755,3 +755,97 @@ body {
   cursor: pointer; text-align: left; white-space: nowrap;
 }
 .export-menu button:hover { background: rgba(99,102,241,.15); color: #fff; }
+
+/* ── Tablet ve telefon ekranı iyileştirmeleri ─────────────────── */
+
+/* Tablet görünümü */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .header-content,
+  .dashboard-main {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .dashboard-main {
+    padding-top: 28px;
+  }
+
+  .report-header,
+  .dashboard-section {
+    padding: 24px;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Dar telefon görünümü */
+@media (max-width: 480px) {
+  .dashboard-header {
+    padding: 12px 0;
+  }
+
+  .header-content {
+    padding: 0 14px;
+  }
+
+  .logo-sub {
+    display: none;
+  }
+
+  .nav-link {
+    padding: 8px;
+  }
+
+  .dashboard-main {
+    padding: 18px 12px 44px;
+  }
+
+  .report-header,
+  .dashboard-section {
+    border-radius: 12px;
+    padding: 16px;
+  }
+
+  .report-title {
+    font-size: 20px;
+  }
+
+  .report-meta {
+    gap: 10px;
+  }
+
+  .meta-item {
+    font-size: 12px;
+  }
+
+  .report-actions {
+    gap: 8px;
+  }
+
+  .btn-share,
+  .btn-export {
+    min-height: 40px;
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .summary-card {
+    padding: 16px;
+  }
+
+  .markdown-content {
+    font-size: 14px;
+  }
+
+  .chart-wrapper {
+    min-height: 240px;
+    overflow-x: auto;
+  }
+
+  .sql-code {
+    padding: 14px;
+    font-size: 11px;
+  }
+}
