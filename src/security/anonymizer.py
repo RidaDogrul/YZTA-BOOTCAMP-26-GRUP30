@@ -1,21 +1,65 @@
 import re
+import unicodedata
+from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
 from pandas.api.types import is_string_dtype
 from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
-from presidio_anonymizer import AnonymizerEngine
-from presidio_anonymizer.entities import OperatorConfig
+
+
+@dataclass
+class _PseudonymizationContext:
+    """
+    Tek bir anonimleştirme işlemi boyunca kişi etiketlerini tutar.
+
+    Ham isimler kalıcı olarak saklanmaz. Context, anonymize_text,
+    anonymize_dict veya anonymize_dataframe çağrısı tamamlandığında
+    erişilemez hâle gelir.
+    """
+
+    aliases: dict[tuple[str, str], str] = field(default_factory=dict)
+    counters: dict[str, int] = field(default_factory=dict)
+
+    def alias_for(self, value: Any, role: str) -> str:
+        """Aynı rol ve kişi değeri için aynı takma etiketi döndürür."""
+        normalized_value = unicodedata.normalize(
+            "NFKC",
+            str(value),
+        )
+        normalized_value = normalized_value.replace("İ", "i").replace(
+            "I",
+            "ı",
+        )
+        normalized_value = " ".join(normalized_value.split()).casefold()
+        alias_key = (role, normalized_value)
+
+        if alias_key not in self.aliases:
+            next_number = self.counters.get(role, 0) + 1
+            self.counters[role] = next_number
+            self.aliases[alias_key] = f"{role}-{next_number:03d}"
+
+        return self.aliases[alias_key]
 
 
 class PIIAnonymizer:
     """
-    Kişisel verileri maskeler.
+    Kişisel verileri maskeler ve kişi adlarını takma kimliklerle değiştirir.
+
     Örnek:
-        Ahmet'in maili ahmet@example.com
+        John Smith'in maili john@example.com
+
     çıktısı:
-        <PERSON>'in maili <EMAIL>
+        Kişi-001'in maili <EMAIL>
+
+    Yapılandırılmış kişi alanlarında alanın rolü etikete yansıtılır:
+        customer_name -> Müşteri-001
+        employee_name -> Çalışan-001
+
+    Takma kimlik eşlemesi yalnızca tek bir public metot çağrısı boyunca
+    geçerlidir. Bu sayede aynı raporda aynı kişi ayırt edilebilir; farklı
+    raporlar arasında kalıcı olarak izlenemez.
     """
 
     def __init__(self) -> None:
@@ -30,7 +74,6 @@ class PIIAnonymizer:
         self.analyzer = AnalyzerEngine(
             nlp_engine=nlp_engine, supported_languages=["en"]
         )
-        self.anonymizer = AnonymizerEngine()
 
     def anonymize_text(
         self,
@@ -45,37 +88,70 @@ class PIIAnonymizer:
         telefon ve TCKN maskelemesi çalışmaya devam eder. Bu seçenek şehir
         gibi yapılandırılmış konum değerlerinin kişi sanılmasını önlemek
         için kullanılır.
+
+        Serbest metinde rol bilinmediği için kişiler Kişi-001, Kişi-002
+        biçiminde etiketlenir.
         """
         if not text:
             return text
 
-        entities = ["EMAIL_ADDRESS"]
-        operators = {
-            "EMAIL_ADDRESS": OperatorConfig(
-                "replace",
-                {"new_value": "<EMAIL>"},
-            ),
-        }
+        context = _PseudonymizationContext()
+        return self._anonymize_text_with_context(
+            text,
+            mask_person=mask_person,
+            context=context,
+            person_role="Kişi",
+        )
 
+    def _anonymize_text_with_context(
+        self,
+        text: str,
+        *,
+        mask_person: bool,
+        context: _PseudonymizationContext,
+        person_role: str,
+    ) -> str:
+        """
+        Ortak context kullanarak metni anonimleştirir.
+
+        DataFrame ve iç içe sözlüklerde bu yardımcı metot kullanıldığı için
+        aynı kişi aynı anonimleştirme işlemi boyunca aynı etiketi alır.
+        """
+        entities = ["EMAIL_ADDRESS"]
         if mask_person:
             entities.append("PERSON")
-            operators["PERSON"] = OperatorConfig(
-                "replace",
-                {"new_value": "<PERSON>"},
-            )
 
-        # Presidio analizini çalıştır
         results = self.analyzer.analyze(
             text=text,
             language="en",
             entities=entities,
         )
-        anonymized_result = self.anonymizer.anonymize(
-            text=text,
-            analyzer_results=results,
-            operators=operators,
-        )
-        anonymized_text = anonymized_result.text
+
+        anonymized_text = text
+        selected_results = self._select_non_overlapping_results(results)
+
+        for result in sorted(
+            selected_results,
+            key=lambda item: (item.start, item.end),
+            reverse=True,
+        ):
+            original_value = text[result.start : result.end]
+
+            if result.entity_type == "PERSON":
+                replacement = context.alias_for(
+                    original_value,
+                    person_role,
+                )
+            elif result.entity_type == "EMAIL_ADDRESS":
+                replacement = "<EMAIL>"
+            else:
+                continue
+
+            anonymized_text = (
+                anonymized_text[: result.start]
+                + replacement
+                + anonymized_text[result.end :]
+            )
 
         # Ek regex kontrolleri
         anonymized_text = self._mask_email(anonymized_text)
@@ -88,8 +164,13 @@ class PIIAnonymizer:
         Dict içindeki kişisel verileri anahtar adlarını da dikkate alarak
         recursive biçimde maskeler.
         """
+        context = _PseudonymizationContext()
         return {
-            key: self._anonymize_value(value, key_hint=str(key))
+            key: self._anonymize_value(
+                value,
+                key_hint=str(key),
+                context=context,
+            )
             for key, value in data.items()
         }
 
@@ -97,6 +178,9 @@ class PIIAnonymizer:
         self,
         value: Any,
         key_hint: str | None = None,
+        *,
+        context: _PseudonymizationContext,
+        inherited_role: str | None = None,
     ) -> Any:
         """
         İç içe dict, list ve tuple yapılarını recursive olarak işler.
@@ -106,21 +190,38 @@ class PIIAnonymizer:
         Konum alanlarında ise yanlış PERSON tespitini önlemek için kişi
         tanıması kapatılır.
         """
+        current_role = self._detect_role_hint(key_hint) or inherited_role
+
         if isinstance(value, dict):
             return {
-                key: self._anonymize_value(item, key_hint=str(key))
+                key: self._anonymize_value(
+                    item,
+                    key_hint=str(key),
+                    context=context,
+                    inherited_role=current_role,
+                )
                 for key, item in value.items()
             }
 
         if isinstance(value, list):
             return [
-                self._anonymize_value(item, key_hint=key_hint)
+                self._anonymize_value(
+                    item,
+                    key_hint=key_hint,
+                    context=context,
+                    inherited_role=current_role,
+                )
                 for item in value
             ]
 
         if isinstance(value, tuple):
             return tuple(
-                self._anonymize_value(item, key_hint=key_hint)
+                self._anonymize_value(
+                    item,
+                    key_hint=key_hint,
+                    context=context,
+                    inherited_role=current_role,
+                )
                 for item in value
             )
 
@@ -128,21 +229,29 @@ class PIIAnonymizer:
             pii_type = self._detect_pii_column_type(key_hint)
 
             if pii_type is not None:
-                if value is None or (
-                    not isinstance(value, str) and pd.isna(value)
-                ):
+                if self._is_missing_value(value):
                     return value
+
+                if pii_type == "<PERSON>":
+                    specific_role = self._detect_person_role(key_hint)
+                    person_role = (
+                        specific_role or inherited_role or current_role or "Kişi"
+                    )
+                    return self._pseudonymize_structured_person(
+                        value,
+                        role=person_role,
+                        context=context,
+                    )
 
                 return pii_type
 
         if isinstance(value, str):
-            is_location = (
-                key_hint is not None
-                and self._is_location_column(key_hint)
-            )
-            return self.anonymize_text(
+            is_location = key_hint is not None and self._is_location_column(key_hint)
+            return self._anonymize_text_with_context(
                 value,
                 mask_person=not is_location,
+                context=context,
+                person_role=current_role or "Kişi",
             )
 
         return value
@@ -155,35 +264,136 @@ class PIIAnonymizer:
         - email/mail/e_posta -> <EMAIL>
         - phone/telefon/gsm -> <PHONE>
         - tckn/tc_no/tc_kimlik -> <TCKN>
-        - name/ad_soyad/isim/customer_name -> <PERSON>
+        - customer_name -> Müşteri-001, Müşteri-002
+        - employee_name -> Çalışan-001, Çalışan-002
+        - name/ad_soyad/isim -> Kişi-001, Kişi-002
 
         Konum kolonlarında PERSON tanıması kapatılır; diğer PII kontrolleri
         çalışmaya devam eder. Diğer metin kolonlarında mevcut genel metin
         analizi uygulanır.
         """
         anonymized_df = df.copy()
+        context = _PseudonymizationContext()
 
         for column in anonymized_df.columns:
             pii_type = self._detect_pii_column_type(column)
 
-            if pii_type:
+            if pii_type == "<PERSON>":
+                person_role = (
+                    self._detect_person_role(column)
+                    or self._detect_role_hint(column)
+                    or "Kişi"
+                )
                 anonymized_df[column] = anonymized_df[column].apply(
-                    lambda value: value if pd.isna(value) else pii_type
+                    lambda value, role=person_role: (
+                        self._pseudonymize_structured_person(
+                            value,
+                            role=role,
+                            context=context,
+                        )
+                    )
+                )
+            elif pii_type:
+                anonymized_df[column] = anonymized_df[column].apply(
+                    lambda value, replacement=pii_type: (
+                        value if self._is_missing_value(value) else replacement
+                    )
                 )
             elif is_string_dtype(anonymized_df[column]):
                 is_location = self._is_location_column(column)
+                person_role = self._detect_role_hint(column) or "Kişi"
                 anonymized_df[column] = anonymized_df[column].apply(
-                    lambda value: self.anonymize_text(
-                        value,
-                        mask_person=not is_location,
+                    lambda value, location=is_location, role=person_role: (
+                        self._anonymize_text_with_context(
+                            value,
+                            mask_person=not location,
+                            context=context,
+                            person_role=role,
+                        )
+                        if isinstance(value, str)
+                        else value
                     )
-                    if isinstance(value, str)
-                    else value
                 )
 
         return anonymized_df
 
     # Dahili yardımcı fonksiyonlar
+
+    def _select_non_overlapping_results(
+        self,
+        results: list[Any],
+    ) -> list[Any]:
+        """
+        Çakışan Presidio sonuçlarından güvenli olanları seçer.
+
+        E-posta gibi biçimi açık bir varlık, aynı aralığı PERSON olarak
+        işaretleyen tahminden önceliklidir. Kalan sonuçlarda skor ve daha
+        uzun metin aralığı tercih edilir.
+        """
+        entity_priority = {
+            "EMAIL_ADDRESS": 2,
+            "PERSON": 1,
+        }
+        ordered_results = sorted(
+            results,
+            key=lambda item: (
+                entity_priority.get(item.entity_type, 0),
+                getattr(item, "score", 0.0),
+                item.end - item.start,
+            ),
+            reverse=True,
+        )
+        selected: list[Any] = []
+
+        for candidate in ordered_results:
+            if candidate.start < 0 or candidate.end <= candidate.start:
+                continue
+
+            overlaps_existing = any(
+                candidate.start < existing.end and existing.start < candidate.end
+                for existing in selected
+            )
+            if not overlaps_existing:
+                selected.append(candidate)
+
+        return selected
+
+    def _pseudonymize_structured_person(
+        self,
+        value: Any,
+        *,
+        role: str,
+        context: _PseudonymizationContext,
+    ) -> Any:
+        """Yapılandırılmış kişi değerini rol bazlı takma kimliğe çevirir."""
+        if self._is_missing_value(value):
+            return value
+
+        if isinstance(value, str) and not value.strip():
+            return value
+
+        if isinstance(value, str) and self._is_person_alias(value):
+            return value
+
+        return context.alias_for(value, role)
+
+    def _is_person_alias(self, value: str) -> bool:
+        """Daha önce üretilmiş rol bazlı kişi etiketlerini tanır."""
+        person_alias_pattern = (
+            r"^(?:Müşteri|Çalışan|Hasta|Tedarikçi|Yetkili|"
+            r"Kullanıcı|Kişi)-\d{3,}$"
+        )
+        return re.fullmatch(person_alias_pattern, value.strip()) is not None
+
+    def _is_missing_value(self, value: Any) -> bool:
+        """None, NaN, NaT ve pd.NA gibi eksik skaler değerleri tanır."""
+        if value is None:
+            return True
+
+        try:
+            return bool(pd.isna(value))
+        except (TypeError, ValueError):
+            return False
 
     def _mask_email(self, text: str) -> str:
         """E-posta adreslerini regex ile maskeler."""
@@ -227,16 +437,10 @@ class PIIAnonymizer:
 
     def _is_valid_tckn(self, number: str) -> bool:
         """TCKN doğrulama algoritması."""
-        if (
-            not number.isdigit()
-            or len(number) != 11
-            or number[0] == "0"
-        ):
+        if not number.isdigit() or len(number) != 11 or number[0] == "0":
             return False
         digits = [int(d) for d in number]
-        odd_sum = (
-            digits[0] + digits[2] + digits[4] + digits[6] + digits[8]
-        )
+        odd_sum = digits[0] + digits[2] + digits[4] + digits[6] + digits[8]
         even_sum = digits[1] + digits[3] + digits[5] + digits[7]
         tenth_digit = ((odd_sum * 7) - even_sum) % 10
         eleventh_digit = sum(digits[:10]) % 10
@@ -298,17 +502,26 @@ class PIIAnonymizer:
                 "lastname",
                 "customername",
                 "clientname",
+                "employeename",
+                "staffname",
+                "personnelname",
+                "patientname",
                 "username",
                 "adsoyad",
                 "adsoyadi",
                 "isim",
                 "soyisim",
                 "musteriadi",
+                "calisanadi",
+                "personeladi",
                 "hastaadi",
                 "kullaniciadi",
                 "contactname",
                 "authorizedperson",
                 "yetkilikisi",
+                "suppliercontactname",
+                "vendorcontactname",
+                "tedarikciyetkilisi",
             ],
             "<ADDRESS>": [
                 "address",
@@ -341,6 +554,122 @@ class PIIAnonymizer:
 
                 if len(pattern) >= 5 and pattern in normalized_column:
                     return replacement
+
+        return None
+
+    def _detect_person_role(self, column_name: str) -> str | None:
+        """
+        Yapılandırılmış kişi alanının iş rolünü döndürür.
+
+        Genel name/ad_soyad gibi alanlarda rol tahmin edilmez; üst
+        container'dan gelen rol veya Kişi varsayılanı kullanılır.
+        """
+        return self._detect_role_hint(column_name)
+
+    def _detect_role_hint(
+        self,
+        field_name: str | None,
+    ) -> str | None:
+        """
+        Alan veya container adına göre kişi rolünü belirler.
+
+        Örneğin customers listesinin içindeki genel name alanı, üst
+        container'dan Müşteri rolünü devralır.
+        """
+        if field_name is None:
+            return None
+
+        normalized_field = self._normalize_column_name(field_name)
+        role_patterns = [
+            (
+                "Müşteri",
+                {
+                    "customer",
+                    "customers",
+                    "customername",
+                    "client",
+                    "clients",
+                    "clientname",
+                    "musteri",
+                    "musteriler",
+                    "musteriadi",
+                },
+            ),
+            (
+                "Çalışan",
+                {
+                    "employee",
+                    "employees",
+                    "employeename",
+                    "staff",
+                    "staffname",
+                    "personnel",
+                    "personnelname",
+                    "calisan",
+                    "calisanlar",
+                    "calisanadi",
+                    "personel",
+                    "personeller",
+                    "personeladi",
+                },
+            ),
+            (
+                "Hasta",
+                {
+                    "patient",
+                    "patients",
+                    "patientname",
+                    "hasta",
+                    "hastalar",
+                    "hastaadi",
+                },
+            ),
+            (
+                "Tedarikçi",
+                {
+                    "supplier",
+                    "suppliers",
+                    "suppliercontactname",
+                    "vendor",
+                    "vendors",
+                    "vendorcontactname",
+                    "tedarikci",
+                    "tedarikciler",
+                    "tedarikciyetkilisi",
+                },
+            ),
+            (
+                "Yetkili",
+                {
+                    "contact",
+                    "contacts",
+                    "contactname",
+                    "authorizedperson",
+                    "yetkili",
+                    "yetkililer",
+                    "yetkilikisi",
+                },
+            ),
+            (
+                "Kullanıcı",
+                {
+                    "user",
+                    "users",
+                    "username",
+                    "kullanici",
+                    "kullanicilar",
+                    "kullaniciadi",
+                },
+            ),
+        ]
+
+        for role, patterns in role_patterns:
+            for pattern in patterns:
+                if normalized_field == pattern:
+                    return role
+
+                if len(pattern) >= 5 and pattern in normalized_field:
+                    return role
 
         return None
 
