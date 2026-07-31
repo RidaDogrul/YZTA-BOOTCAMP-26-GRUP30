@@ -1,7 +1,7 @@
 """
-MySQL konnektörü. BaseConnector'daki ortak mantığı miras alır; yalnızca
+MySQL bağlantısı. BaseConnector'daki ortak mantığı miras alır; yalnızca
 MySQL'e özgü bağlantı adresini (mysql+pymysql://...) sağlar.
-postgres.py ile birebir aynı arayüzü paylaşır.
+MySQL ve PostgreSQL bağlantıları aynı arayüzü paylaşır.
 """
 from __future__ import annotations
 
