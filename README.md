@@ -90,7 +90,7 @@ The end-to-end pipeline showing how a user's natural language question is proces
                                                 ▼
                                     [AGENT 3: INSIGHT GENERATOR]
                                      - Structures results as JSON/Text
-                                     - Prepares chart data (D3.js)
+                                     - Prepares chart data 
                                      - Produces an action plan
                                                 │
                                                 ▼
