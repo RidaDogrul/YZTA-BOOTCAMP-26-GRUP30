@@ -1610,3 +1610,129 @@ body {
   text-underline-offset: 3px;
 }
 .auth-switch-link:hover { color: var(--indigo); }
+
+/* ── Tablet ve telefon ekranı iyileştirmeleri ─────────────────── */
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  :root {
+    --sw: 260px;
+  }
+
+  .sidebar-header {
+    padding: 14px 12px 12px;
+  }
+
+  .field-group,
+  .conn-actions {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .msg-bubble {
+    max-width: 82%;
+  }
+
+  .welcome {
+    padding: 28px 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  html,
+  body,
+  .sidebar,
+  .main {
+    height: 100dvh;
+  }
+
+  :root {
+    --sw: min(86vw, 320px);
+  }
+
+  .topbar {
+    padding: 0 12px;
+    gap: 7px;
+  }
+
+  .topbar-title {
+    font-size: 14px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .topbar-badge {
+    display: none !important;
+  }
+
+  .welcome {
+    padding: 24px 16px;
+    overflow-y: auto;
+  }
+
+  .welcome-title {
+    font-size: 21px;
+  }
+
+  .welcome-desc {
+    font-size: 13px;
+  }
+
+  .messages {
+    padding: 12px 0;
+  }
+
+  .msg-row {
+    padding: 0 12px;
+  }
+
+  .msg-bubble {
+    max-width: 94%;
+  }
+
+  .input-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .input-field {
+    font-size: 16px;
+  }
+
+  .send-btn {
+    width: 42px;
+    height: 42px;
+  }
+
+  .msg-chart {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .logo-name,
+  .topbar-title {
+    font-size: 13px;
+  }
+
+  .btn-clear-chat span,
+  .btn-report span {
+    display: none;
+  }
+
+  .btn-clear-chat,
+  .btn-report {
+    padding: 7px;
+  }
+
+  .suggestion-card {
+    padding: 10px;
+  }
+
+  .field-row,
+  .asf-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}

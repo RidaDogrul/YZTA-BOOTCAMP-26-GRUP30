@@ -8,6 +8,8 @@ from pandas.api.types import is_string_dtype
 from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 
+PERSON_ALIAS_PREFIX = "Customer"
+
 
 @dataclass
 class _PseudonymizationContext:
@@ -23,7 +25,10 @@ class _PseudonymizationContext:
     counters: dict[str, int] = field(default_factory=dict)
 
     def alias_for(self, value: Any, role: str) -> str:
-        """Aynı rol ve kişi değeri için aynı takma etiketi döndürür."""
+        """Aynı kişi değeri için aynı Customer takma etiketini döndürür."""
+        # Rol parametresi mevcut çağrı noktalarıyla uyumluluk için korunur.
+        # Kullanıcıya gösterilen bütün kişi etiketleri tek prefix kullanır.
+        role = PERSON_ALIAS_PREFIX
         normalized_value = unicodedata.normalize(
             "NFKC",
             str(value),
@@ -51,11 +56,12 @@ class PIIAnonymizer:
         John Smith'in maili john@example.com
 
     çıktısı:
-        Kişi-001'in maili <EMAIL>
+        Customer-001'in maili <EMAIL>
 
-    Yapılandırılmış kişi alanlarında alanın rolü etikete yansıtılır:
-        customer_name -> Müşteri-001
-        employee_name -> Çalışan-001
+    Yapılandırılmış veya serbest metindeki bütün kişi değerleri tek bir
+    standartla etiketlenir:
+        customer_name -> Customer-001
+        employee_name -> Customer-002
 
     Takma kimlik eşlemesi yalnızca tek bir public metot çağrısı boyunca
     geçerlidir. Bu sayede aynı raporda aynı kişi ayırt edilebilir; farklı
@@ -89,8 +95,8 @@ class PIIAnonymizer:
         gibi yapılandırılmış konum değerlerinin kişi sanılmasını önlemek
         için kullanılır.
 
-        Serbest metinde rol bilinmediği için kişiler Kişi-001, Kişi-002
-        biçiminde etiketlenir.
+        Serbest metindeki kişiler Customer-001, Customer-002 biçiminde
+        etiketlenir.
         """
         if not text:
             return text
@@ -264,9 +270,9 @@ class PIIAnonymizer:
         - email/mail/e_posta -> <EMAIL>
         - phone/telefon/gsm -> <PHONE>
         - tckn/tc_no/tc_kimlik -> <TCKN>
-        - customer_name -> Müşteri-001, Müşteri-002
-        - employee_name -> Çalışan-001, Çalışan-002
-        - name/ad_soyad/isim -> Kişi-001, Kişi-002
+        - customer_name -> Customer-001, Customer-002
+        - employee_name -> Customer-001, Customer-002
+        - name/ad_soyad/isim -> Customer-001, Customer-002
 
         Konum kolonlarında PERSON tanıması kapatılır; diğer PII kontrolleri
         çalışmaya devam eder. Diğer metin kolonlarında mevcut genel metin
@@ -380,7 +386,7 @@ class PIIAnonymizer:
     def _is_person_alias(self, value: str) -> bool:
         """Daha önce üretilmiş rol bazlı kişi etiketlerini tanır."""
         person_alias_pattern = (
-            r"^(?:Müşteri|Çalışan|Hasta|Tedarikçi|Yetkili|"
+            r"^(?:Customer|Müşteri|Çalışan|Hasta|Tedarikçi|Yetkili|"
             r"Kullanıcı|Kişi)-\d{3,}$"
         )
         return re.fullmatch(person_alias_pattern, value.strip()) is not None
