@@ -95,8 +95,8 @@ def test_dataframe_column_based_masking(anonymizer):
 
     result = anonymizer.anonymize_dataframe(df)
 
-    assert result.loc[0, "customer_name"] == "Müşteri-001"
-    assert result.loc[1, "customer_name"] == "Müşteri-002"
+    assert result.loc[0, "customer_name"] == "Customer-001"
+    assert result.loc[1, "customer_name"] == "Customer-002"
 
     assert result.loc[0, "email"] == "<EMAIL>"
     assert result.loc[1, "email"] == "<EMAIL>"
@@ -123,7 +123,7 @@ def test_dataframe_turkish_column_names_are_detected(anonymizer):
 
     result = anonymizer.anonymize_dataframe(df)
 
-    assert result.loc[0, "Müşteri Adı"] == "Müşteri-001"
+    assert result.loc[0, "Müşteri Adı"] == "Customer-001"
     assert result.loc[0, "E Posta"] == "<EMAIL>"
     assert result.loc[0, "Telefon Numarası"] == "<PHONE>"
     assert result.loc[0, "TC Kimlik Numarası"] == "<TCKN>"
@@ -198,8 +198,8 @@ def test_dict_masks_turkish_name_by_key(anonymizer):
 
     result = anonymizer.anonymize_dict(data)
 
-    assert result["name"] == "Kişi-001"
-    assert result["profil"]["Müşteri Adı"] == "Müşteri-001"
+    assert result["name"] == "Customer-001"
+    assert result["profil"]["Müşteri Adı"] == "Customer-002"
     assert result["profil"]["status"] == "active"
 
 
@@ -225,13 +225,13 @@ def test_dict_masks_pii_inside_list_of_dicts(anonymizer):
 
     result = anonymizer.anonymize_dict(data)
 
-    assert result["customers"][0]["name"] == "Müşteri-001"
+    assert result["customers"][0]["name"] == "Customer-001"
     assert result["customers"][0]["email"] == "<EMAIL>"
     assert result["customers"][0]["telefon"] == "<PHONE>"
     assert result["customers"][0]["tc_no"] == "<TCKN>"
     assert result["customers"][0]["total_order"] == 2500
 
-    assert result["customers"][1]["name"] == "Müşteri-002"
+    assert result["customers"][1]["name"] == "Customer-002"
     assert result["customers"][1]["email"] == "<EMAIL>"
     assert result["customers"][1]["telefon"] == "<PHONE>"
     assert result["customers"][1]["tc_no"] == "<TCKN>"
@@ -263,15 +263,15 @@ def test_dataframe_reuses_customer_alias_for_same_person(anonymizer):
     result = anonymizer.anonymize_dataframe(df)
 
     assert result["customer_name"].tolist() == [
-        "Müşteri-001",
-        "Müşteri-002",
-        "Müşteri-001",
+        "Customer-001",
+        "Customer-002",
+        "Customer-001",
     ]
     assert "Ayşe Demir" not in result.to_string()
     assert "Mehmet Kaya" not in result.to_string()
 
 
-def test_structured_person_fields_use_role_based_aliases(anonymizer):
+def test_all_structured_person_fields_use_customer_aliases(anonymizer):
     data = {
         "customer_name": "Ayşe Demir",
         "employee_name": "Mehmet Kaya",
@@ -285,13 +285,13 @@ def test_structured_person_fields_use_role_based_aliases(anonymizer):
     result = anonymizer.anonymize_dict(data)
 
     assert result == {
-        "customer_name": "Müşteri-001",
-        "employee_name": "Çalışan-001",
-        "patient_name": "Hasta-001",
-        "supplier_contact_name": "Tedarikçi-001",
-        "authorized_person": "Yetkili-001",
-        "user_name": "Kullanıcı-001",
-        "name": "Kişi-001",
+        "customer_name": "Customer-001",
+        "employee_name": "Customer-002",
+        "patient_name": "Customer-003",
+        "supplier_contact_name": "Customer-004",
+        "authorized_person": "Customer-005",
+        "user_name": "Customer-006",
+        "name": "Customer-007",
     }
 
 
@@ -307,9 +307,9 @@ def test_nested_customer_container_passes_role_to_name_field(anonymizer):
     result = anonymizer.anonymize_dict(data)
 
     assert [customer["name"] for customer in result["customers"]] == [
-        "Müşteri-001",
-        "Müşteri-001",
-        "Müşteri-002",
+        "Customer-001",
+        "Customer-001",
+        "Customer-002",
     ]
 
 
@@ -317,16 +317,16 @@ def test_alias_sequence_resets_for_each_public_call(anonymizer):
     first_result = anonymizer.anonymize_dict({"customer_name": "Ayşe Demir"})
     second_result = anonymizer.anonymize_dict({"customer_name": "Mehmet Kaya"})
 
-    assert first_result["customer_name"] == "Müşteri-001"
-    assert second_result["customer_name"] == "Müşteri-001"
+    assert first_result["customer_name"] == "Customer-001"
+    assert second_result["customer_name"] == "Customer-001"
 
 
-def test_role_aliases_are_preserved_when_chart_rows_are_masked_again(
+def test_customer_aliases_are_preserved_when_chart_rows_are_masked_again(
     anonymizer,
 ):
     rows = [
-        {"customer_name": "Müşteri-001", "total_order": 7500},
-        {"customer_name": "Müşteri-002", "total_order": 500},
+        {"customer_name": "Customer-001", "total_order": 7500},
+        {"customer_name": "Customer-002", "total_order": 500},
     ]
 
     result = [anonymizer.anonymize_dict(row) for row in rows]
@@ -357,7 +357,7 @@ def test_person_column_preserves_missing_and_blank_values(anonymizer):
 
     result = anonymizer.anonymize_dataframe(df)
 
-    assert result.loc[0, "customer_name"] == "Müşteri-001"
+    assert result.loc[0, "customer_name"] == "Customer-001"
     assert pd.isna(result.loc[1, "customer_name"])
     assert result.loc[2, "customer_name"] == ""
 
@@ -395,7 +395,7 @@ def test_free_text_people_receive_unique_and_reusable_aliases(
 
     result = anonymizer.anonymize_text(text)
 
-    assert result == ("Kişi-001 ve Kişi-002, sonra Kişi-001")
+    assert result == ("Customer-001 ve Customer-002, sonra Customer-001")
     assert "John Smith" not in result
     assert "Jane Doe" not in result
 
@@ -490,7 +490,7 @@ def test_dict_preserves_city_while_masking_other_pii(anonymizer):
     result = anonymizer.anonymize_dict(data)
 
     assert result["city"] == "İzmir"
-    assert result["customer_name"] == "Müşteri-001"
+    assert result["customer_name"] == "Customer-001"
     assert result["email"] == "<EMAIL>"
     assert result["phone"] == "<PHONE>"
     assert result["tc_no"] == "<TCKN>"
@@ -531,7 +531,7 @@ def test_dataframe_preserves_location_and_masks_pii_columns(anonymizer):
     result = anonymizer.anonymize_dataframe(df)
 
     assert result.loc[0, "şehir"] == "İzmir"
-    assert result.loc[0, "Müşteri Adı"] == "Müşteri-001"
+    assert result.loc[0, "Müşteri Adı"] == "Customer-001"
     assert result.loc[0, "E Posta"] == "<EMAIL>"
     assert result.loc[0, "Telefon Numarası"] == "<PHONE>"
     assert result.loc[0, "TC Kimlik Numarası"] == "<TCKN>"
