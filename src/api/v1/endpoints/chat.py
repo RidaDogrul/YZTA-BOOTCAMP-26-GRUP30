@@ -369,17 +369,6 @@ def _fallback_response(question, reason_message):
         "answer": "Üzgünüm, sorunuzu yanıtlamak için uygun bir kaynak bulunamadı."
     }
 
-
-
-
-def _fallback_response(question, reason_message):
-    return {
-        "status": "fallback",
-        "question": question,
-        "message": reason_message,
-        "answer": "Üzgünüm, sorunuzu yanıtlamak için uygun bir kaynak bulunamadı."
-    }
-
 @router.post(
     "/ask",
     response_model=ChatResponse,
