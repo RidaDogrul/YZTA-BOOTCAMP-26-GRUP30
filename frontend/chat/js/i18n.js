@@ -4,6 +4,10 @@
 
 const TRANSLATIONS = {
   tr: {
+    "auth.login": "Giriş Yap",
+    "auth.login_do": "Giriş yapın",
+    "auth.login_sub": "Nexus Analytics hesabınıza giriş yapın",
+
     // Connection
     "connection.waiting": "Bağlantı bekleniyor",
     "connection.connected": "bağlı",
@@ -151,6 +155,10 @@ const TRANSLATIONS = {
     "report.share_link": "Paylaşım Linki:",
   },
   en: {
+    "auth.login": "Log In",
+    "auth.login_do": "Log in",
+    "auth.login_sub": "Log in to your Nexus Analytics account",
+    
     // Connection
     "connection.waiting": "Waiting for connection",
     "connection.connected": "connected",
