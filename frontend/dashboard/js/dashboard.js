@@ -4,6 +4,47 @@
  * PDF/Excel'i tarayıcıda üretir, mail'i backend'e gönderir.
  */
 
+/* ─── Dil (chat ile aynı: nexus_lang) ─────────────────────── */
+const LANG = localStorage.getItem("nexus_lang") === "en" ? "en" : "tr";
+
+const I18N = {
+  tr: {
+    dashboard_title: "📊 Rapor Dashboard",
+    back: "← Analize Dön",
+    search_ph: "Başlık veya özette ara...",
+    all_sources: "Tüm kaynaklar",
+    empty: "Henüz rapor yok. Önce sohbette bir analiz yapın.",
+    summary: "Özet", chart: "Grafik", action_plan: "Aksiyon Planı", sql: "SQL Sorgusu",
+    view: "Görüntüle", mail_send: "Gönder",
+    no_summary: "Özet bulunamadı.", untitled: "İsimsiz Rapor",
+    mail_ph: "ornek@mail.com",
+    mail_invalid: "Geçerli bir mail adresi girin",
+    mail_preparing: "PDF hazırlanıyor…",
+    mail_sent: "Mail gönderildi ✔",
+    mail_failed: "Mail gönderilemedi",
+    pdf_downloading: "PDF indiriliyor",
+    excel_downloading: "Excel indiriliyor",
+  },
+  en: {
+    dashboard_title: "📊 Report Dashboard",
+    back: "← Back to Analysis",
+    search_ph: "Search in title or summary...",
+    all_sources: "All sources",
+    empty: "No reports yet. Run an analysis in the chat first.",
+    summary: "Summary", chart: "Chart", action_plan: "Action Plan", sql: "SQL Query",
+    view: "View", mail_send: "Send",
+    no_summary: "No summary available.", untitled: "Untitled Report",
+    mail_ph: "example@mail.com",
+    mail_invalid: "Enter a valid email address",
+    mail_preparing: "Preparing PDF…",
+    mail_sent: "Mail sent ✔",
+    mail_failed: "Mail could not be sent",
+    pdf_downloading: "Downloading PDF",
+    excel_downloading: "Downloading Excel",
+  },
+};
+
+function tr(key) { return (I18N[LANG] && I18N[LANG][key]) || I18N.tr[key] || key; }
 const API_BASE = "http://localhost:8000/api/v1";
 const REPORTS_KEY = "nexus_reports"; // raporların saklandığı yer
 
@@ -48,21 +89,21 @@ function renderReports() {
     .map(
       (r, i) => `
     <div class="card">
-      <div class="card-title">${esc(r.title || "İsimsiz Rapor")}</div>
+      <div class="card-title">${esc(r.title || tr("untitled"))}</div>
       <div class="card-meta">
         ${r.source_type ? `<span class="badge">${esc(r.source_type)}</span>` : ""}
         <span>${formatDate(r.created_at)}</span>
       </div>
-      <div class="card-summary">${esc(r.summary || "")}</div>
+      <div class="card-summary">${esc(r.summary || tr("no_summary"))}</div>
       <div class="card-actions">
-        <button class="btn btn-view"  onclick="openDetail(${i})">Görüntüle</button>
+        <button class="btn btn-view"  onclick="openDetail(${i})">${tr("view")}</button>
         <button class="btn btn-pdf"   onclick="downloadPDF(${i})">PDF</button>
         <button class="btn btn-excel" onclick="downloadExcel(${i})">Excel</button>
         <button class="btn btn-mail"  onclick="toggleMail(${i})">Mail</button>
       </div>
       <div class="mail-box" id="mailbox-${i}">
-        <input type="email" id="mailinput-${i}" placeholder="ornek@mail.com" />
-        <button class="btn btn-mail" onclick="sendMail(${i})">Gönder</button>
+        <input type="email" id="mailinput-${i}" placeholder="${tr("mail_ph")}" />
+        <button class="btn btn-mail" onclick="sendMail(${i})">${tr("mail_send")}</button>
       </div>
     </div>`
     )
@@ -83,32 +124,32 @@ function openDetail(i) {
 
   modal.innerHTML = `
     <button class="modal-close" onclick="closeModal()">×</button>
-    <h2>${esc(r.title || "Rapor")}</h2>
+    <h2>${esc(r.title || tr("report"))}</h2>
     <div class="card-meta">
       ${r.source_type ? `<span class="badge">${esc(r.source_type)}</span>` : ""}
       <span>${formatDate(r.created_at)}</span>
     </div>
 
     <div class="section">
-      <h3>Özet</h3>
+      <h3>${tr("summary")}</h3>
       <p>${esc(r.summary || "—")}</p>
     </div>
 
     ${
       r.chart_data && r.chart_data.length
-        ? `<div class="section"><h3>Grafik</h3><canvas id="detailChart" height="120"></canvas></div>`
+        ? `<div class="section"><h3>${tr("chart")}</h3><canvas id="detailChart" height="120"></canvas></div>`
         : ""
     }
 
     ${
       actions
-        ? `<div class="section"><h3>Aksiyon Planı</h3><ul>${actions}</ul></div>`
+        ? `<div class="section"><h3>${tr("action_plan")}</h3><ul>${actions}</ul></div>`
         : ""
     }
 
     ${
       r.sql_query
-        ? `<div class="section"><h3>SQL Sorgusu</h3><pre>${esc(r.sql_query)}</pre></div>`
+        ? `<div class="section"><h3>${tr("sql")}</h3><pre>${esc(r.sql_query)}</pre></div>`
         : ""
     }
   `;
@@ -161,9 +202,9 @@ function buildReportElement(r) {
   el.style.fontFamily = "sans-serif";
   el.style.color = "#111";
   el.innerHTML = `
-    <h1 style="color:#4f46e5">${esc(r.title || "Rapor")}</h1>
+    <h1 style="color:#4f46e5">${esc(r.title || tr("report"))}</h1>
     <p style="color:#666">${formatDate(r.created_at)} · ${esc(r.source_type || "")}</p>
-    <h3>Özet</h3>
+    <h3>${tr("summary")}</h3>
     <p>${esc(r.summary || "—")}</p>
   `;
 
@@ -203,7 +244,7 @@ function buildReportElement(r) {
     img.style.width = "100%";
     img.style.maxWidth = "600px";
     const chartTitle = document.createElement("h3");
-    chartTitle.textContent = "Grafik";
+    chartTitle.textContent = tr("chart");
     el.appendChild(chartTitle);
     el.appendChild(img);
     chart.destroy();
@@ -212,7 +253,7 @@ function buildReportElement(r) {
   // ── Aksiyon planı ──
   if ((r.action_plan || []).length) {
     const h = document.createElement("h3");
-    h.textContent = "Aksiyon Planı";
+    h.textContent = tr("action_plan");
     const ul = document.createElement("ul");
     ul.innerHTML = r.action_plan
       .map((a) => `<li>${esc(typeof a === "string" ? a : a.action || "")}</li>`)
@@ -224,7 +265,7 @@ function buildReportElement(r) {
   // ── SQL ──
   if (r.sql_query) {
     const h = document.createElement("h3");
-    h.textContent = "SQL Sorgusu";
+    h.textContent = tr("sql");
     const pre = document.createElement("pre");
     pre.style.cssText = "background:#f4f4f4;padding:10px;white-space:pre-wrap";
     pre.textContent = r.sql_query;
@@ -239,10 +280,10 @@ function buildReportElement(r) {
 function downloadPDF(i) {
   const r = window._filtered[i];
   html2pdf()
-    .set({ filename: `${(r.title || "rapor").replace(/\s+/g, "_")}.pdf`, margin: 10 })
+    .set({ filename: `${(r.title || tr("report")).replace(/\s+/g, "_")}.pdf`, margin: 10 })
     .from(buildReportElement(r))
     .save();
-  toast("PDF indiriliyor", "success");
+  toast(tr("pdf_downloading"), "success");
 }
 
 /* ─── Excel indir (SheetJS) ───────────────────────────────── */
@@ -252,21 +293,21 @@ function downloadExcel(i) {
 
   // 1. sayfa: özet bilgiler
   const summarySheet = XLSX.utils.json_to_sheet([
-    { Alan: "Başlık", Değer: r.title || "" },
-    { Alan: "Tarih", Değer: formatDate(r.created_at) },
-    { Alan: "Kaynak", Değer: r.source_type || "" },
-    { Alan: "Özet", Değer: r.summary || "" },
+    { Alan: tr("title"), Değer: r.title || "" },
+    { Alan: tr("date"), Değer: formatDate(r.created_at) },
+    { Alan: tr("source"), Değer: r.source_type || "" },
+    { Alan: tr("summary"), Değer: r.summary || "" },
   ]);
-  XLSX.utils.book_append_sheet(wb, summarySheet, "Özet");
+  XLSX.utils.book_append_sheet(wb, summarySheet, tr("summary"));
 
   // 2. sayfa: grafik verisi (varsa)
   if (r.chart_data && r.chart_data.length) {
     const dataSheet = XLSX.utils.json_to_sheet(r.chart_data);
-    XLSX.utils.book_append_sheet(wb, dataSheet, "Veri");
+    XLSX.utils.book_append_sheet(wb, dataSheet, tr("data"));
   }
 
-  XLSX.writeFile(wb, `${(r.title || "rapor").replace(/\s+/g, "_")}.xlsx`);
-  toast("Excel indiriliyor", "success");
+  XLSX.writeFile(wb, `${(r.title || tr("report")).replace(/\s+/g, "_")}.xlsx`);
+  toast(tr("excel_downloading"), "success");
 }
 
 /* ─── Mail kutusunu aç/kapat ──────────────────────────────── */
@@ -280,11 +321,11 @@ async function sendMail(i) {
   const r = window._filtered[i];
   const email = document.getElementById(`mailinput-${i}`).value.trim();
   if (!email || !email.includes("@")) {
-    toast("Geçerli bir mail adresi girin", "error");
+    toast(tr("mail_invalid"), "error");
     return;
   }
 
-  toast("PDF hazırlanıyor…", "success");
+  toast(tr("pdf_preparing"), "success");
   try {
     // PDF'i base64 üret
     const dataUri = await html2pdf()
@@ -294,19 +335,19 @@ async function sendMail(i) {
     const pdfBase64 = dataUri.split(",")[1]; // önekten sonrası
 
     const html = `
-      <h2>${esc(r.title || "Analiz Raporu")}</h2>
+      <h2>${esc(r.title || tr("report"))}</h2>
       <p>${esc(r.summary || "")}</p>
-      <p>Ayrıntılı rapor ekteki PDF dosyasındadır.</p>`;
+      <p>${tr("detailed_report")}</p>`;
 
     const res = await fetch(`${API_BASE}/reports/email`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to: email,
-        subject: r.title || "Analiz Raporu",
+        subject: r.title || tr("report"),
         html: html,
         pdf_base64: pdfBase64,
-        filename: `${(r.title || "rapor").replace(/\s+/g, "_")}.pdf`,
+        filename: `${(r.title || tr("report")).replace(/\s+/g, "_")}.pdf`,
       }),
     });
 
@@ -314,10 +355,10 @@ async function sendMail(i) {
       const data = await res.json().catch(() => ({}));
       throw new Error(data.detail || `HTTP ${res.status}`);
     }
-    toast("Mail gönderildi ✔", "success");
+    toast(tr("mail_sent"), "success");
     document.getElementById(`mailbox-${i}`).classList.remove("open");
   } catch (err) {
-    toast(`Mail gönderilemedi: ${err.message}`, "error");
+    toast(`${tr("mail_failed")}: ${err.message}`, "error");
   }
 }
 
@@ -332,7 +373,8 @@ function esc(s) {
 function formatDate(iso) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleString("tr-TR", {
+    const locale = LANG === "en" ? "en-US" : "tr-TR";
+    return new Date(iso).toLocaleString(locale, {
       day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit",
     });
   } catch {
@@ -351,6 +393,13 @@ function toast(msg, type = "success") {
 
 /* ─── Başlat ──────────────────────────────────────────────── */
 function init() {
+  // Statik HTML metinlerini dile göre ayarla
+  document.querySelector(".topbar h1").textContent = tr("dashboard_title");
+  document.querySelector(".topbar a").textContent = tr("back");
+  document.getElementById("searchInput").placeholder = tr("search_ph");
+  document.getElementById("emptyState").textContent = tr("empty");
+  const allOpt = document.querySelector('#sourceFilter option[value=""]');
+  if (allOpt) allOpt.textContent = tr("all_sources");
   loadReports();
   renderReports();
   document.getElementById("searchInput").addEventListener("input", renderReports);
