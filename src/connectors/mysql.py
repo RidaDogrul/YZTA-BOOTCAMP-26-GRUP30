@@ -1,7 +1,7 @@
 """
 MySQL bağlantısı. BaseConnector'daki ortak mantığı miras alır; yalnızca
-MySQL'e özgü bağlantı adresini (mysql+pymysql://...) sağlar.
-MySQL ve PostgreSQL bağlantıları aynı arayüzü paylaşır.
+MySQL'e özgü bağlantı adresini sağlar.
+Örnek bağlantı: mysql+pymysql://user:pass@localhost:3306/db
 """
 from __future__ import annotations
 
