@@ -41,7 +41,7 @@ ai-data-agent/
 │   ├── security/                   # Cleanroom and Masking
 │   │   └── anonymizer.py           # PII (Personal data) filtering algorithms
 │   │
-│   ├── agents/                     # AI Agents (CrewAI / LangChain)
+│   ├── agents/                     # AI Agents (LangChain)
 │   │   ├── orchestrator.py         # The brain managing workflow between agents
 │   │   ├── prompts.py              # System prompts and text-to-sql templates
 │   │   └── tools/                  # Python functions usable by the agents
@@ -167,7 +167,7 @@ The end-to-end pipeline showing how a user's natural language question is proces
 | Layer | Technologies |
 |--------|-------------|
 | **Backend** | Python, FastAPI |
-| **AI Orchestration** | LangChain, CrewAI |
+| **AI Orchestration** | LangChain|
 | **ML / Forecasting** | Prophet, ARIMA, LightGBM, scikit-learn |
 | **Data Processing** | Pandas |
 | **Databases** | PostgreSQL, MySQL, MongoDB |
@@ -202,7 +202,7 @@ Sprint planning and task tracking are carried out via Jira. Board screenshots an
 |--------|--------|--------|
 | **Sprint I** | [`Jira/Sprint-I/`](./Jira/Sprint-I) | [Board Screenshot 1](./Jira/Sprint-I/Sprint%20I%20-%20Jira.png) · [Board Screenshot 2](./Jira/Sprint-I/Sprint-I-jira-2.png) · [Task List (xlsx)](./Jira/Sprint-I/jira-sprint1%20.xlsx) |
 | **Sprint II** | [`Jira/Sprint-II/`](./Jira/Sprint-II) | [Board Screenshot 1](./Jira/Sprint-II/Sprint2-Jira.png) · [Board Screenshot 2](./Jira/Sprint-II/Sprint2-Jira-2.png) · [Task List (xlsx)](./Jira/Sprint-II/Jira-Sprint2.xlsx) |
-| **Sprint III** | [`Jira/Sprint-III/`](./Jira/Sprint-III) | *(Coming soon)* |
+| **Sprint III** | [`Jira/Sprint-III/`](./Jira/Sprint-III) | [Board Screenshot 1](./Jira/Sprint-III/Sprint3-Jira.png) · [Board Screenshot 2](./Jira/Sprint-III/Sprint3-Jira2.png) · [Task List (xlsx)](./Jira/Sprint-III/jira-sprint3.xlsx) |
 
 ---
 
@@ -216,7 +216,7 @@ Screenshots of the stand-up meetings (2-3 times a week) held throughout each spr
 |--------|--------|-----------|
 | **Sprint I** | [`Daily Scrum/Sprint-I/`](./Daily%20Scrum/Sprint-I) | [1](./Daily%20Scrum/Sprint-I/1000022584.jpg) · [2](./Daily%20Scrum/Sprint-I/1000022585.jpg) · [3](./Daily%20Scrum/Sprint-I/1000022586.jpg) · [4](./Daily%20Scrum/Sprint-I/1000022587.jpg) · [5](./Daily%20Scrum/Sprint-I/20260705-16590.jpg) |
 | **Sprint II** | [`Daily Scrum/Sprint-II/`](./Daily%20Scrum/Sprint-II) | [1](./Daily%20Scrum/Sprint-II/Daily%20Scrum-I.png) · [2](./Daily%20Scrum/Sprint-II/Daily%20Scrum-II.png) · [3](./Daily%20Scrum/Sprint-II/Daily-Scrum-III.png) |
-| **Sprint III** | [`Daily Scrum/Sprint-III/`](./Daily%20Scrum/Sprint-III) | *(Coming soon)* |
+| **Sprint III** | [`Daily Scrum/Sprint-III/`](./Daily%20Scrum/Sprint-III) | [1](./Daily%20Scrum/Sprint-III/Daily%20Scrum-%20I.png) · [2](./Daily%20Scrum/Sprint-III/Daily-Scrum-II.png) · [3](./Daily%20Scrum/Sprint-III/Daily%20Scrum%20III.png) |
 
 ---
 
