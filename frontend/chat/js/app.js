@@ -122,6 +122,16 @@ function _switchSource(srcType) {
   });
   const panel = document.getElementById(PANEL_MAP[srcType]);
   if (panel) panel.classList.add("active");
+
+  // Update placeholder based on selected source type
+  const connUrlInput = document.getElementById("connectionUrl");
+  if (connUrlInput) {
+    if (srcType === "mysql") {
+      connUrlInput.placeholder = "mysql+pymysql://user:pass@host:3306/db";
+    } else {
+      connUrlInput.placeholder = "postgresql+psycopg2://user:pass@host:5432/db";
+    }
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════
