@@ -314,12 +314,12 @@
     </div>
     <div class="topbar-right">
       <!-- Auth butonları -->
-      <button class="btn-auth-login" id="btnLogin" aria-label="Giriş Yap">
+      <button class="btn-auth-login" id="btnLogin" data-i18n-aria="auth.login">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8">
           <path d="M10 2h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-3" stroke-linecap="round"/>
           <path d="M7 11l3-3-3-3M10 8H2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <span>Giriş Yap</span>
+        <span data-i18n="auth.login">Giriş Yap</span>
       </button>
       <div class="auth-user-chip hidden" id="authUserChip">
         <div class="auth-avatar" id="authAvatar" aria-hidden="true">U</div>
@@ -360,7 +360,7 @@
     <div class="modal-content auth-modal-content">
       <!-- Tab başlıkları -->
       <div class="auth-tabs">
-        <button class="auth-tab active" id="tabLogin" data-tab="login" aria-selected="true">Giriş Yap</button>
+        <button class="auth-tab active" id="tabLogin" data-tab="login" aria-selected="true" data-i18n="auth.login">Giriş Yap</button>
         <button class="auth-tab" id="tabRegister" data-tab="register" aria-selected="false">Kayıt Ol</button>
       </div>
 
@@ -380,7 +380,7 @@
           </div>
           <div>
             <h2 class="auth-modal-title" id="authModalTitle">Tekrar hoş geldiniz</h2>
-            <p class="auth-modal-sub">Nexus Analytics hesabınıza giriş yapın</p>
+            <p class="auth-modal-sub" data-i18n="auth.login_sub">Nexus Analytics hesabınıza giriş yapın</p>
           </div>
         </div>
 
@@ -405,7 +405,7 @@
           </div>
           <div class="auth-error hidden" id="loginError" role="alert"></div>
           <button type="submit" class="btn-auth-submit" id="btnLoginSubmit">
-            <span class="auth-btn-text">Giriş Yap</span>
+            <span class="auth-btn-text" data-i18n="auth.login">Giriş Yap</span>
             <span class="auth-spinner hidden" aria-hidden="true"></span>
           </button>
         </form>
@@ -467,7 +467,7 @@
         </form>
         <p class="auth-switch-text">
           Zaten hesabınız var mı?
-          <button class="auth-switch-link" data-switch="login">Giriş yapın</button>
+          <button class="auth-switch-link" data-switch="login" data-i18n="auth.login_do">Giriş yapın</button>
         </p>
       </div>
     </div>
