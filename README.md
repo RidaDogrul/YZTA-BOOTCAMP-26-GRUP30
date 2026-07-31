@@ -230,7 +230,7 @@ In the product status check folder, you can find the current status of the produ
 |--------|--------|--------|
 | **Sprint I** | [`Ürün_Durumu_Kontrol/Sprint-I/`](./Ürün_Durumu_Kontrol/Sprint-I) | Screenshots of FastAPI setup, LangChain integration, MySQL/MongoDB/PostgreSQL connector tests, AWS S3 test, schema extractor, PII masking, logger tests, local CI checks, and config management/health check tests |
 | **Sprint II** | [`Ürün_Durumu_Kontrol/Sprint-II/`](./Ürün_Durumu_Kontrol/Sprint-II) | Screenshots of AI Agent Orchestrator, Data Scientist agent, AI Agent Tools, Text-to-SQL layer, MySQL/MongoDB/PostgreSQL/Snowflake connector tests, forecaster demo, performance monitoring, Chat API, Query Cache, Integration and Error Handling tests |
-| **Sprint III** | [`Ürün_Durumu_Kontrol/Sprint-III/`](./Ürün_Durumu_Kontrol/Sprint-III) | *(Coming soon)* |
+| **Sprint III** | [`Ürün_Durumu_Kontrol/Sprint-III/`](./Ürün_Durumu_Kontrol/Sprint-III) | [Sprint 3 Jira Board](./Ürün_Durumu_Kontrol/Sprint-III/Sprint3-Jira.png) · [Sprint 3 Jira Board 2](./Ürün_Durumu_Kontrol/Sprint-III/Sprint3-Jira2.png) |
 
 
 **NOTE**: Changes made will be updated at the end of each sprint.
