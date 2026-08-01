@@ -170,12 +170,46 @@ function apiLogout() {
 ═══════════════════════════════════════════════════════════ */
 
 /**
+ * Kullanıcı localhost/127.0.0.1 içeren bir URL girerse
+ * ilgili input alanının altında uyarı gösterir.
+ * Cloud Run veya Docker dışı ortamlarda gerçek host girilmesi gerekir.
+ */
+function _warnIfLocalhost(payload) {
+  const localhostPattern = /localhost|127\.0\.0\.1/i;
+  const urlValue = payload.connection_url || payload.mongodb_uri || "";
+  const isLocal = localhostPattern.test(urlValue);
+
+  // connection_url hint
+  const urlHint = document.getElementById("connectionUrlHint");
+  if (urlHint) {
+    if (isLocal && (payload.source_type === "mysql" || payload.source_type === "postgresql")) {
+      urlHint.textContent = "⚠ 'localhost' bu sunucudan erişilemez. Docker içinde servis adını kullanın (örn: mysql, postgres).";
+      urlHint.style.display = "block";
+    } else {
+      urlHint.style.display = "none";
+    }
+  }
+
+  // mongodb_uri hint
+  const mongoHint = document.getElementById("mongodbUriHint");
+  if (mongoHint) {
+    if (isLocal && payload.source_type === "mongodb") {
+      mongoHint.textContent = "⚠ 'localhost' bu sunucudan erişilemez. Docker içinde 'mongo' servis adını kullanın (örn: mongodb://mongo:27017/mydb).";
+      mongoHint.style.display = "block";
+    } else {
+      mongoHint.style.display = "none";
+    }
+  }
+}
+
+/**
  * POST /connect-db/test
  * Bağlantı bilgilerini test eder, oturum açmaz.
  * @param {Object} payload  ConnectDbRequest
  * @returns {Object}        TestConnectionResponse
  */
 async function apiTestConnection(payload) {
+  _warnIfLocalhost(payload);
   return apiFetch("/connect-db/test", {
     method: "POST",
     body: JSON.stringify(payload),
@@ -189,6 +223,7 @@ async function apiTestConnection(payload) {
  * @returns {Object}        ConnectDbResponse  { status, source_type, message, session_id }
  */
 async function apiConnect(payload) {
+  _warnIfLocalhost(payload);
   return apiFetch("/connect-db/connect", {
     method: "POST",
     body: JSON.stringify(payload),

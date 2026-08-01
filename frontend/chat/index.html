@@ -83,6 +83,7 @@
         <label class="field-label" for="connectionUrl" data-i18n="form.connection_url">Bağlantı URL</label>
         <input class="field-input" type="text" id="connectionUrl"
                placeholder="postgresql+psycopg2://user:pass@host:5432/db" />
+        <span class="field-hint" id="connectionUrlHint" style="display:none;font-size:11px;color:#f87171;margin-top:3px"></span>
       </div>
     </div>
 
@@ -91,7 +92,8 @@
       <div class="field-group">
         <label class="field-label" for="mongodbUri" data-i18n="form.mongodb_uri">MongoDB URI</label>
         <input class="field-input" type="text" id="mongodbUri"
-               placeholder="mongodb://localhost:27017/mydb" />
+               placeholder="mongodb://host:27017/mydb" />
+        <span class="field-hint" id="mongodbUriHint" style="display:none;font-size:11px;color:#f87171;margin-top:3px"></span>
       </div>
     </div>
 
