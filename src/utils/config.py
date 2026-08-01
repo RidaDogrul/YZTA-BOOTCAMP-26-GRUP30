@@ -35,6 +35,10 @@ class Settings(BaseSettings):
 
     slack_webhook_url: str | None = Field(default=None, repr=False)
 
+    # CORS — virgülle ayrılmış origin listesi; boş bırakılırsa "*" kullanılır
+    # Örnek: "https://myapp.run.app,https://myapp.com"
+    allowed_origins: str = ""
+
     # LLM / API Keys
     google_api_key: str | None = Field(default=None, repr=False)
 

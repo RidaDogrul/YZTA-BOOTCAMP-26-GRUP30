@@ -62,9 +62,11 @@ app.add_middleware(ErrorHandlerMiddleware)
 # --- CORS ---
 # Frontend farklı bir porttan çalışacağı için API'ye erişebilmesini sağlar.
 # Geliştirmede "*"; production'da daraltacağız.
+_ALLOWED_ORIGINS = [o.strip() for o in settings.allowed_origins.split(",") if o.strip()] if hasattr(settings, "allowed_origins") and settings.allowed_origins else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
