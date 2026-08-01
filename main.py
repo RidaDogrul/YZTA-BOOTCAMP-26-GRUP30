@@ -4,9 +4,12 @@ Uygulamanın giriş noktası.
 """
 
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -17,6 +20,8 @@ from src.utils.config import get_settings
 from src.utils.metrics import PerformanceMetricsMiddleware
 
 settings = get_settings()
+
+FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 
 # --- Loglama ayarı ---
@@ -73,6 +78,7 @@ app.add_middleware(
 )
 
 app.add_middleware(PerformanceMetricsMiddleware)
+
 # --- Router'ları bağla ---
 app.include_router(api_router, prefix="/api/v1")
 
@@ -100,3 +106,17 @@ def health_check():
         "environment": settings.app_env,
         "debug": settings.debug,
     }
+
+
+# --- Frontend static dosyaları ---
+# /app → chat arayüzü, /dashboard → rapor dashboard'u
+# Bu mount'lar API router'larından SONRA gelmelidir.
+if FRONTEND_DIR.exists():
+    app.mount("/app", StaticFiles(directory=FRONTEND_DIR / "chat", html=True), name="chat")
+    app.mount("/dashboard", StaticFiles(directory=FRONTEND_DIR / "dashboard", html=True), name="dashboard")
+
+
+@app.get("/", include_in_schema=False)
+def root_redirect():
+    """Ana URL'ye gelindiğinde chat arayüzüne yönlendir."""
+    return FileResponse(FRONTEND_DIR / "chat" / "index.html")

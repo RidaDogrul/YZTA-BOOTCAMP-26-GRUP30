@@ -5,7 +5,10 @@
  * Base URL: http://localhost:8000/api/v1
  */
 
-const API_BASE = "http://localhost:8000/api/v1";
+// Production'da aynı origin'den serve edilir (relative URL).
+// Lokal geliştirmede localhost:8000'i kullanmak için:
+//   window.API_BASE_OVERRIDE = "http://localhost:8000/api/v1"
+const API_BASE = window.API_BASE_OVERRIDE || "/api/v1";
 
 /* ═══════════════════════════════════════════════════════════
    Auth Token — localStorage yönetimi

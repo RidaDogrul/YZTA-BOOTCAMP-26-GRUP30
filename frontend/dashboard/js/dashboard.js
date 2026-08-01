@@ -45,7 +45,9 @@ const I18N = {
 };
 
 function tr(key) { return (I18N[LANG] && I18N[LANG][key]) || I18N.tr[key] || key; }
-const API_BASE = "http://localhost:8000/api/v1";
+// Production'da aynı origin'den serve edilir (relative URL).
+// Lokal geliştirmede: window.API_BASE_OVERRIDE = "http://localhost:8000/api/v1"
+const API_BASE = window.API_BASE_OVERRIDE || "/api/v1";
 const REPORTS_KEY = "nexus_reports"; // raporların saklandığı yer
 
 let allReports = []; // tüm raporlar (filtresiz)

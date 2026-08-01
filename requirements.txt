@@ -1,5 +1,6 @@
 fastapi
 uvicorn[standard]
+aiofiles
 python-dotenv
 pydantic[email]
 langchain
