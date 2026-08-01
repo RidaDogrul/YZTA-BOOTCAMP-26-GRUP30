@@ -17,7 +17,7 @@
 
 # Autonomous Data Cleanroom and Forecasting Agent
 
-> **🚀 Canlı Demo:** [https://yzta-api-769755614322.europe-west1.run.app/app/](https://yzta-api-769755614322.europe-west1.run.app/app/)
+> **🚀 Live Demo:** [https://yzta-api-769755614322.europe-west1.run.app/app/](https://yzta-api-769755614322.europe-west1.run.app/app/)
 
 An autonomous AI agent that connects to companies' scattered databases (SQL, NoSQL, Cloud), cleans raw data, fills in missing values, and — when the user asks a question in natural language without writing any technical code — runs machine learning models in the background to produce predictive reports and action plans.
 
