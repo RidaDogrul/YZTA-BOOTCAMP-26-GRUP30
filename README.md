@@ -55,7 +55,7 @@ ai-data-agent/
 │       └── logger.py               # JSON logging and request-id tracking
 │
 ├── tests/                          # Unit and Integration Tests
-├── requirements.txt                # Dependencies (fastapi, pandas, crewai, scikit-learn)
+├── requirements.txt                # Dependencies (fastapi, pandas, langchain, scikit-learn)
 └── main.py                         # Main file that boots the application
 ```
 
@@ -74,7 +74,7 @@ The end-to-end pipeline showing how a user's natural language question is proces
                              (2. Schema Integration & Security Filter)
                                                 │
                                                 ▼
-                           [AI AGENT ORCHESTRATOR] (CrewAI / LangChain)
+                           [AI AGENT ORCHESTRATOR] (LangChain)
                                                 │
                   ┌─────────────────────────────┴─────────────────────────────┐
                   ▼                                                           ▼
