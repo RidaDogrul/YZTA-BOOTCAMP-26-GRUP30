@@ -88,7 +88,23 @@ async function apiFetch(path, options = {}) {
     if (typeof updateAuthUI === "function") updateAuthUI();
   }
 
-  const data = await res.json();
+  // Body'yi güvenli şekilde parse et — boş veya HTML gelebilir
+  let data = null;
+  const contentType = res.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    try {
+      data = await res.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    // JSON olmayan response (HTML hata sayfası vb.) — text olarak oku
+    const text = await res.text().catch(() => "");
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}${text ? ": " + text.slice(0, 200) : ""}`);
+    }
+    return null;
+  }
 
   if (!res.ok) {
     const msg = data?.detail || `HTTP ${res.status}`;
