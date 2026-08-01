@@ -962,7 +962,9 @@ async function handleConnect() {
   _setDot("testing", connectingText);
   _setLoading(els.btnConnect, true, connectingText);
   try {
-    const res = await apiConnect(buildConnectPayload());
+    const payload = buildConnectPayload();
+    const res = await apiConnect(payload);
+    State._lastConnectPayload = payload; // session expire olunca otomatik reconnect için
     // res.source_id artık backend'den geliyor (gerçek src_xxx ID)
     _setConnected(res.session_id, res.source_type, res.source_id, _srcLabel(res.source_type));
     const connectedText = lang === "tr" ? "Bağlantı kuruldu" : "Connected";
@@ -1062,7 +1064,30 @@ async function handleSend() {
   }));
 
   try {
-    const response = await apiAsk(State.sessionId, question, sourceSelection);
+    let response;
+    try {
+      response = await apiAsk(State.sessionId, question, sourceSelection);
+    } catch (err) {
+      // Session süresi dolmuşsa otomatik yeniden bağlan ve tekrar dene
+      const isSessionExpired = err.message && (
+        err.message.includes("Oturum bulunamadı") ||
+        err.message.includes("süresi doldu") ||
+        err.message.includes("404") ||
+        err.message.includes("session")
+      );
+      if (isSessionExpired && State._lastConnectPayload) {
+        showToast("info", "Oturum yenileniyor", "Bağlantı yeniden kuruluyor…", 3000);
+        try {
+          const reconnect = await apiConnect(State._lastConnectPayload);
+          State.sessionId = reconnect.session_id;
+          response = await apiAsk(State.sessionId, question, sourceSelection);
+        } catch (reconnectErr) {
+          throw reconnectErr;
+        }
+      } else {
+        throw err;
+      }
+    }
     clearInterval(stepTimer);
     hideTyping();
     addAgentMessage(response);
