@@ -3,35 +3,45 @@ uvicorn[standard]
 aiofiles
 python-dotenv
 pydantic[email]
+pydantic-settings
+
+# LangChain
 langchain
-langchain-openai
+langchain-core
 langchain-google-genai
+
+# Database
 sqlalchemy
 psycopg2-binary
-boto3
-pydantic-settings
+pymysql
 pymongo
+snowflake-sqlalchemy
+snowflake-connector-python
 
+# AWS
+boto3
+
+# Data science
+pandas
+numpy
+scikit-learn
+statsmodels
+prophet
+lightgbm
+openpyxl
+xlrd
+
+# Security / Auth
+PyJWT>=2.8,<3
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+
+# PII
 presidio-analyzer
 presidio-anonymizer
 spacy>=3.8,<3.9
 https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
-pandas
 
-
-pymysql
-openpyxl
-xlrd
-snowflake-sqlalchemy
-pre-commit
-
-prophet
-lightgbm
-statsmodels
-scikit-learn
-
-PyJWT>=2.8,<3
-passlib[bcrypt]==1.7.4
-bcrypt==4.0.1
+# Reports
 reportlab
 resend
