@@ -53,7 +53,7 @@ def get_llm():
 
 
     """
-    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite-preview-06-17")
+    model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
     return ChatGoogleGenerativeAI(
         model=model,
         google_api_key=os.getenv("GOOGLE_API_KEY"),

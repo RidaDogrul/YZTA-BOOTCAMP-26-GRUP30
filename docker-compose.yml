@@ -14,7 +14,7 @@ services:
       MYSQL_URL: mysql+pymysql://testuser:3456@mysql:3306/testdb
       MONGODB_URI: mongodb://mongo:27017/mydb
       GOOGLE_API_KEY: ${GOOGLE_API_KEY}
-      GEMINI_MODEL: gemini-2.5-flash-lite-preview-06-17
+      GEMINI_MODEL: gemini-2.5-flash-lite
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       RESEND_API_KEY: ${RESEND_API_KEY}
     depends_on:
