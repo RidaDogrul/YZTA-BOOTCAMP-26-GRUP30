@@ -53,10 +53,10 @@ def get_llm():
 
 
     """
-    model = os.getenv("OPENAI_API_KEY", "gpt-4o-mini")
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     return ChatGoogleGenerativeAI(
         model=model,
-        google_api_key=os.getenv("GOOGLE_API_KEY"),
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
         temperature=0,
     )
 
