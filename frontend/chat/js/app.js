@@ -738,7 +738,26 @@ async function _handleAddSourceConfirm() {
   const connectAddText = typeof t === "function" ? t("btn.connect_add") : "Bağlan & Ekle";
   _setLoading(els.btnAddSourceConfirm, true, connectingText);
   try {
-    const res = await apiAddSource(payload);
+    let res;
+    try {
+      res = await apiAddSource(payload);
+    } catch (err) {
+      // Session expire olduysa ana kaynağa yeniden bağlan
+      const isExpired = err.message && (
+        err.message.includes("Oturum bulunamadı") ||
+        err.message.includes("süresi doldu") ||
+        err.message.includes("404")
+      );
+      if (isExpired && State._lastConnectPayload) {
+        showToast("info", "Oturum yenileniyor", "Bağlantı yeniden kuruluyor…", 3000);
+        const reconnect = await apiConnect(State._lastConnectPayload);
+        State.sessionId = reconnect.session_id;
+        payload.session_id = reconnect.session_id;
+        res = await apiAddSource(payload);
+      } else {
+        throw err;
+      }
+    }
     _syncSourcesFromBackend(res.sources);
 
     // Yeni eklenen kaynağın accordion'unu aç + şema çek
