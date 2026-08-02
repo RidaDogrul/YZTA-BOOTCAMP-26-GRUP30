@@ -113,7 +113,8 @@ jobs:
           image: europe-west1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/yzta-api/yzta-api:${{ github.sha }}
           flags: --allow-unauthenticated
           env_vars: |
-            GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            OPENAI_MODEL=${{ secrets.OPENAI_MODEL }}
             DATABASE_URL=${{ secrets.DATABASE_URL }}
             MYSQL_URL=${{ secrets.MYSQL_URL }}
             MONGODB_URI=${{ secrets.MONGODB_URI }}
