@@ -5,20 +5,20 @@ böylece model/ayar değişikliği tek yerden yapılır.
 import os
 
 from dotenv import load_dotenv
-from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
 
 def get_llm():
     """
-    Yapılandırılmış OpenAI modelini döndürür.
+    Yapılandırılmış Gemini modelini döndürür.
     temperature=0 -> tutarlı, tekrarlanabilir cevaplar (SQL üretimi için ideal).
     """
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    return ChatOpenAI(
+    model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite")
+    return ChatGoogleGenerativeAI(
         model=model,
-        api_key=os.getenv("OPENAI_API_KEY"),
+        google_api_key=os.getenv("GOOGLE_API_KEY"),
         temperature=0,
     )
 
