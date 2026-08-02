@@ -4,6 +4,7 @@ aiofiles
 python-dotenv
 pydantic[email]
 langchain
+langchain-openai
 langchain-google-genai
 sqlalchemy
 psycopg2-binary
